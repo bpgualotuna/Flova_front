@@ -9,6 +9,15 @@
 
 export type UserRole = 'paciente' | 'medico' | 'admin';
 
+export type TipoSeguro = 
+  | 'ninguno'
+  | 'iess'
+  | 'ejercito'
+  | 'policia'
+  | 'privado'
+  | 'issfa'
+  | 'isspol';
+
 export interface User {
   id: number | string;
   cedula: string;           // Usuario = cédula
@@ -19,7 +28,8 @@ export interface User {
   direccion?: string;
   edad?: number;
   sexo?: 'masculino' | 'femenino' | 'otro';
-  tieneSeguro: boolean;
+  tieneSeguro: boolean;     // DEPRECATED: usar tipoSeguro
+  tipoSeguro: TipoSeguro;   // Tipo de seguro del usuario
   telefono?: string;
   avatar?: string;
   fotoPerfil?: string | null;
@@ -45,7 +55,7 @@ export interface RegisterData {
   direccion: string;
   edad: number;
   sexo: 'masculino' | 'femenino' | 'otro';
-  tieneSeguro: boolean;
+  tipoSeguro: TipoSeguro;
   telefono?: string;
   email?: string;
 }

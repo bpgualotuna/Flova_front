@@ -49,7 +49,8 @@ interface User {
   direccion?: string;
   edad?: number;
   sexo?: 'masculino' | 'femenino' | 'otro';
-  tieneSeguro: boolean;        // DEFAULT false
+  tieneSeguro: boolean;        // DEFAULT false (DEPRECATED)
+  tipoSeguro: 'ninguno' | 'iess' | 'ejercito' | 'policia' | 'privado' | 'issfa' | 'isspol';  // NOT NULL
   telefono?: string;
   avatar?: string;             // URL de la imagen
   fotoPerfil?: string;
@@ -68,11 +69,15 @@ interface User {
 **Índices:**
 - PRIMARY KEY: `id`
 - UNIQUE: `cedula`, `email`
-- INDEX: `role`, `especialidad`
+- INDEX: `role`, `especialidad`, `tipoSeguro`
 
 **Relaciones:**
 - Un Usuario puede tener muchas Citas (como paciente)
 - Un Usuario (médico) puede atender muchas Citas
+
+**Notas:**
+- El campo `tieneSeguro` se mantiene por compatibilidad pero está deprecado
+- El campo `tipoSeguro` es el nuevo estándar para identificar el tipo de seguro
 
 ---
 
@@ -205,7 +210,7 @@ interface HorarioAtencion {
   "direccion": "Av. Principal 123",
   "edad": 35,
   "sexo": "masculino",
-  "tieneSeguro": true,
+  "tipoSeguro": "iess",
   "telefono": "0999888777",
   "email": "juan@email.com"
 }
@@ -726,45 +731,88 @@ const isValid = await bcrypt.compare(password, user.password);
 ## 5. REGLAS DE NEGOCIO
 
 ### 5.1 Citas
-1. **Horarios Disponibles:**
-   - Un médico no puede tener dos citas a la misma hora
-   - Las citas solo se pueden agendar en horarios de atención del médico
-   - No se pueden agendar citas en fechas pasadas
 
-2. **Estados de Citas:**
-   - `pendiente`: Cita creada, esperando confirmación
-   - `confirmada`: Cita confirmada por el sistema o médico
-   - `completada`: Cita realizada
-   - `cancelada`: Cita cancelada por paciente o médico
+#### 5.1.1 Restricciones de Reserva
 
-3. **Cancelaciones:**
-   - Solo se pueden cancelar citas con estado 'pendiente' o 'confirmada'
-   - Se debe proporcionar un motivo de cancelación
-   - No se pueden cancelar citas pasadas
+**A. Anticipación Mínima (12 horas)**
+- Las citas deben reservarse con al menos 12 horas de anticipación desde el momento actual
+- Ejemplo: Si son las 10:00 AM del día 1, no se puede reservar una cita antes de las 10:00 PM del día 1
+- Validación: `fechaHoraCita - fechaHoraActual >= 12 horas`
 
-4. **Notificaciones (Futuro):**
-   - Enviar email/SMS al crear cita
-   - Recordatorio 24 horas antes de la cita
-   - Notificación al cancelar cita
+**B. Restricción de Doble Reserva**
+- Un usuario NO puede reservar dos citas en la misma fecha y hora
+- Esto aplica incluso si son de diferentes especialidades o médicos
+- Validación: Verificar que no exista otra cita activa (pendiente o confirmada) para el mismo paciente en la misma fecha y hora
+
+**C. Cancelación con Anticipación (24 horas)**
+- Una cita solo puede cancelarse con mínimo 24 horas de anticipación respecto a la fecha de la cita
+- Ejemplo: Si la cita es el día 5 a las 10:00 AM, solo se puede cancelar antes del día 4 a las 10:00 AM
+- Validación: `fechaHoraCita - fechaHoraActual >= 24 horas`
+- Solo se pueden cancelar citas con estado 'pendiente' o 'confirmada'
+
+#### 5.1.2 Horarios Disponibles
+- Un médico no puede tener dos citas a la misma hora
+- Las citas solo se pueden agendar en horarios de atención del médico
+- No se pueden agendar citas en fechas pasadas
+
+#### 5.1.3 Estados de Citas
+- `pendiente`: Cita creada, esperando confirmación
+- `confirmada`: Cita confirmada por el sistema o médico
+- `completada`: Cita realizada
+- `cancelada`: Cita cancelada por paciente o médico
+
+#### 5.1.4 Notificaciones (Futuro)
+- Enviar email/SMS al crear cita
+- Recordatorio 24 horas antes de la cita
+- Notificación al cancelar cita
 
 ---
 
 ### 5.2 Usuarios
-1. **Registro:**
-   - Solo se pueden registrar pacientes desde el frontend
-   - Médicos y admins se crean desde panel de administración
 
-2. **Roles:**
-   - `paciente`: Puede agendar citas, ver sus citas, actualizar perfil
-   - `medico`: Puede ver sus citas asignadas, actualizar estado, agregar notas
-   - `admin`: Acceso completo al sistema
+#### 5.2.1 Registro
+- Solo se pueden registrar pacientes desde el frontend público
+- Médicos y admins se crean desde panel de administración
+- El campo `tipoSeguro` es obligatorio en el registro
+
+#### 5.2.2 Tipos de Seguro
+Los tipos de seguro disponibles son:
+- `ninguno`: No tiene seguro
+- `iess`: Instituto Ecuatoriano de Seguridad Social
+- `ejercito`: Seguro del Ejército
+- `policia`: Seguro Policial
+- `issfa`: Instituto de Seguridad Social de las Fuerzas Armadas
+- `isspol`: Instituto de Seguridad Social de la Policía
+- `privado`: Seguro Privado
+
+#### 5.2.3 Roles y Permisos
+
+**Paciente:**
+- Puede agendar citas
+- Puede ver sus propias citas
+- Puede cancelar sus citas (con restricción de 24 horas)
+- Puede actualizar su perfil
+
+**Médico:**
+- Puede ver sus citas asignadas
+- Puede actualizar estado de citas (confirmar, completar)
+- Puede agregar notas a las citas
+- Puede ver información de sus pacientes
+
+**Admin:**
+- Acceso completo al sistema
+- Puede gestionar usuarios (crear, editar, eliminar)
+- Puede gestionar terapias (crear, editar, activar/desactivar)
+- Puede ver todas las citas del sistema
+- Puede asignar roles a usuarios
 
 ---
 
 ### 5.3 Terapias
-1. Solo terapias activas se muestran en el frontend
+1. Solo terapias activas se muestran en el frontend público
 2. Al desactivar una terapia, no se cancelan citas existentes
 3. Precio y duración son obligatorios
+4. Solo administradores pueden crear, editar o eliminar terapias
 
 ---
 
@@ -777,6 +825,7 @@ const isValid = await bcrypt.compare(password, user.password);
 - `edad`: 1-120
 - `telefono`: 10 dígitos (opcional)
 - `fullName`: 3-100 caracteres
+- `tipoSeguro`: Debe ser uno de los valores permitidos (ninguno, iess, ejercito, policia, privado, issfa, isspol)
 
 ### 6.2 Cita
 - `fecha`: Fecha futura
@@ -784,6 +833,9 @@ const isValid = await bcrypt.compare(password, user.password);
 - `sintomas`: Mínimo 10 caracteres
 - `terapiaId`: Debe existir y estar activa
 - `medicoId`: Debe existir y tener role='medico'
+- **Anticipación mínima**: 12 horas desde el momento actual
+- **Sin doble reserva**: No puede haber otra cita del mismo paciente en la misma fecha y hora
+- **Cancelación**: Solo con 24 horas de anticipación
 
 ### 6.3 Terapia
 - `nombre`: 3-100 caracteres

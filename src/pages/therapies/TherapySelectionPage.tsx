@@ -25,7 +25,6 @@ import {
   AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useGetTerapiasQuery } from '../../services/terapiasApi';
-import { ROUTES } from '../../app/router';
 import { Terapia } from '../../types';
 
 export default function TherapySelectionPage() {
@@ -36,7 +35,8 @@ export default function TherapySelectionPage() {
   const handleSelectTerapia = (terapia: Terapia) => {
     // Guardar terapia seleccionada en sessionStorage
     sessionStorage.setItem('selectedTerapia', JSON.stringify(terapia));
-    navigate('/calendario');
+    // Navegar a selección de médico
+    navigate('/seleccion-medico');
   };
 
   // Filtrar terapias por búsqueda

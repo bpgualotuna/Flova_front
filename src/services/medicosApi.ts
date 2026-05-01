@@ -1,15 +1,10 @@
-/**
- * API de Médicos - RTK Query
- * Servicio mock para gestión de médicos
- */
-
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Medico } from '../types';
 import { mockMedicos } from './mocks/medicosMock';
 
 export const medicosApi = createApi({
   reducerPath: 'medicosApi',
-  baseQuery: fetchBaseQuery({ baseURL: '/api' }),
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
   tagTypes: ['Medicos'],
   endpoints: (builder) => ({
     // Obtener todos los médicos

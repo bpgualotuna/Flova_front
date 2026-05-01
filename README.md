@@ -5,13 +5,20 @@ Sistema profesional de gestión de pacientes y citas médicas desarrollado con R
 ## 🏥 Características
 
 - ✅ **Autenticación completa** con login y registro
+- ✅ **Sistema de roles** (Paciente, Médico, Admin) con permisos diferenciados
 - ✅ **Gestión de citas médicas** con flujo de 3 pasos
+- ✅ **Reglas de negocio** implementadas:
+  - Anticipación mínima de 12 horas para reservar
+  - Restricción de doble reserva
+  - Cancelación con 24 horas de anticipación
 - ✅ **Selección de terapias** con cards visuales
 - ✅ **Calendario de disponibilidad** de médicos
 - ✅ **Formulario médico** con síntomas y exámenes
 - ✅ **Dashboard interactivo** con estadísticas
 - ✅ **Gestión de perfil** de usuario
-- ✅ **Sistema de roles** (Paciente, Médico, Admin)
+- ✅ **Panel de administración** para gestionar usuarios y terapias
+- ✅ **Panel de médico** para gestionar citas y pacientes
+- ✅ **Tipos de seguro** (IESS, Ejército, Policía, Privado, etc.)
 - ✅ **Diseño responsive** adaptado a móviles y desktop
 - ✅ **Datos mock** para pruebas sin backend
 
@@ -117,16 +124,23 @@ npm run lint         # Ejecutar linter
 ### Paciente
 - **Usuario:** 1234567890
 - **Contraseña:** password123
+- **Permisos:** Reservar citas, ver citas, cancelar citas, actualizar perfil
+
+### Médico
+- **Usuario:** 1234567890 (Dr. Carlos Mendoza)
+- **Contraseña:** password123
+- **Permisos:** Ver citas asignadas, confirmar citas, completar citas, agregar notas
 
 ### Administrador
 - **Usuario:** admin
 - **Contraseña:** admin123
+- **Permisos:** Gestión completa de usuarios, terapias y sistema
 
 ## 🎯 Flujo de Usuario (Paciente)
 
 1. **Login/Registro**
    - Iniciar sesión con cédula y contraseña
-   - O registrarse como nuevo paciente
+   - O registrarse como nuevo paciente (seleccionar tipo de seguro)
 
 2. **Dashboard**
    - Ver próximas citas
@@ -138,15 +152,52 @@ npm run lint         # Ejecutar linter
    - **Paso 2:** Elegir fecha y hora en calendario
    - **Paso 3:** Completar formulario médico (síntomas, exámenes)
    - **Paso 4:** Confirmar y crear cita
+   - **Validaciones:** Anticipación mínima 12 horas, sin doble reserva
 
 4. **Gestionar Citas**
    - Ver todas las citas (próximas, completadas, canceladas)
-   - Cancelar citas pendientes
+   - Cancelar citas pendientes (con 24 horas de anticipación)
    - Ver detalles de cada cita
 
 5. **Perfil**
    - Ver información personal
    - Actualizar datos de contacto
+
+## 🩺 Flujo de Usuario (Médico)
+
+1. **Login**
+   - Iniciar sesión con cédula y contraseña
+
+2. **Dashboard**
+   - Ver estadísticas de citas
+   - Accesos rápidos
+
+3. **Gestionar Citas**
+   - Ver citas del día
+   - Ver próximas citas
+   - Confirmar citas pendientes
+   - Completar citas
+   - Agregar notas a las consultas
+   - Ver información de pacientes
+
+## 🔧 Flujo de Usuario (Admin)
+
+1. **Login**
+   - Iniciar sesión con usuario admin
+
+2. **Gestión de Usuarios**
+   - Ver lista completa de usuarios
+   - Buscar y filtrar usuarios
+   - Agregar nuevos usuarios (médicos, admins)
+   - Editar información de usuarios
+   - Eliminar usuarios
+
+3. **Gestión de Terapias**
+   - Ver catálogo de terapias
+   - Crear nuevas terapias
+   - Editar terapias existentes
+   - Activar/desactivar terapias
+   - Eliminar terapias
 
 ## 🎨 Sistema de Diseño
 
@@ -233,6 +284,7 @@ El sistema incluye datos mock completos para desarrollo sin backend:
 - [Redux Toolkit](https://redux-toolkit.js.org/)
 - [React Hook Form](https://react-hook-form.com/)
 - [Zod](https://zod.dev/)
+- [Cambios Implementados](./CAMBIOS_IMPLEMENTADOS.md) - Documentación detallada de los últimos cambios
 
 ## 🤝 Contribución
 
@@ -246,7 +298,16 @@ Este proyecto fue generado siguiendo las especificaciones técnicas del document
 
 3. **Validaciones:** Todas las validaciones están implementadas en el frontend. El backend debe implementar las mismas validaciones.
 
-4. **Roles:** El sistema soporta 3 roles (paciente, médico, admin). Actualmente solo el flujo de paciente está completamente implementado.
+4. **Roles:** El sistema soporta 3 roles (paciente, médico, admin). Cada rol tiene permisos específicos y acceso a diferentes páginas.
+
+5. **Reglas de Negocio:**
+   - Las citas deben reservarse con al menos 12 horas de anticipación
+   - Un usuario no puede tener dos citas en la misma fecha y hora
+   - Las citas solo pueden cancelarse con 24 horas de anticipación
+
+6. **Tipos de Seguro:** El sistema maneja 7 tipos de seguro: ninguno, IESS, Ejército, Policía, ISSFA, ISSPOL, y Privado
+
+7. **Documentación:** Ver `CAMBIOS_IMPLEMENTADOS.md` para detalles completos de los últimos cambios y endpoints necesarios
 
 ## 🎓 Frase Inspiradora
 

@@ -87,7 +87,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginResult>
 export const register = async (data: RegisterData): Promise<LoginResult> => {
   await delay(1000);
   
-  const { cedula, nombresCompletos, password, direccion, edad, sexo, tieneSeguro, telefono, email } = data;
+  const { cedula, nombresCompletos, password, direccion, edad, sexo, tipoSeguro, telefono, email } = data;
   
   // Verificar si el usuario ya existe
   const existingUser = mockUsuarios.find(u => u.cedula === cedula);
@@ -108,7 +108,8 @@ export const register = async (data: RegisterData): Promise<LoginResult> => {
     direccion,
     edad,
     sexo,
-    tieneSeguro,
+    tieneSeguro: tipoSeguro !== 'ninguno', // Mantener compatibilidad
+    tipoSeguro,
     telefono,
     email,
     createdAt: new Date().toISOString(),

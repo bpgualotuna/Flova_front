@@ -152,21 +152,22 @@ const themeOptions: ThemeOptions = {
       },
     },
     
-    // DataGrid
-    MuiDataGrid: {
-      styleOverrides: {
-        root: {
-          border: 'none',
-          '& .MuiDataGrid-cell': {
-            borderBottom: `1px solid ${colors.divider}`,
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: colors.background.default,
-            borderBottom: `2px solid ${colors.divider}`,
-          },
-        },
-      },
-    },
+    // DataGrid - Comentado porque no es parte del tema base de MUI
+    // Se puede personalizar directamente en el componente si es necesario
+    // MuiDataGrid: {
+    //   styleOverrides: {
+    //     root: {
+    //       border: 'none',
+    //       '& .MuiDataGrid-cell': {
+    //         borderBottom: `1px solid ${colors.divider}`,
+    //       },
+    //       '& .MuiDataGrid-columnHeaders': {
+    //         backgroundColor: colors.background.default,
+    //         borderBottom: `2px solid ${colors.divider}`,
+    //       },
+    //     },
+    //   },
+    // },
   },
 };
 

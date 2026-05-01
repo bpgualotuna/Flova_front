@@ -24,7 +24,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGetCitasPacienteQuery, useCancelarCitaMutation } from '../../services/citasApi';
-import { Cita } from '../../types';
 import Swal from 'sweetalert2';
 
 export default function MyCitasPage() {

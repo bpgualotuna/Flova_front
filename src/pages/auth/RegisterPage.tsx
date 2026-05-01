@@ -19,8 +19,6 @@ import {
   Link,
   CircularProgress,
   MenuItem,
-  FormControlLabel,
-  Checkbox,
   Grid,
 } from '@mui/material';
 import {
@@ -50,7 +48,7 @@ const registerSchema = z.object({
     .min(1, 'La edad debe ser mayor a 0')
     .max(120, 'La edad no puede ser mayor a 120'),
   sexo: z.enum(['masculino', 'femenino', 'otro']),
-  tieneSeguro: z.boolean(),
+  tipoSeguro: z.enum(['ninguno', 'iess', 'ejercito', 'policia', 'privado', 'issfa', 'isspol']),
   telefono: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -76,7 +74,7 @@ export default function RegisterPage() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      tieneSeguro: false,
+      tipoSeguro: 'ninguno',
       sexo: 'masculino',
     },
   });
@@ -93,7 +91,7 @@ export default function RegisterPage() {
         direccion: data.direccion,
         edad: data.edad,
         sexo: data.sexo,
-        tieneSeguro: data.tieneSeguro,
+        tipoSeguro: data.tipoSeguro,
         telefono: data.telefono,
         email: data.email,
       });
@@ -288,21 +286,23 @@ export default function RegisterPage() {
               </Grid>
 
               <Grid item xs={12}>
-                <Controller
-                  name="tieneSeguro"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          {...field}
-                          checked={field.value}
-                        />
-                      }
-                      label="¿Tiene seguro de salud?"
-                    />
-                  )}
-                />
+                <TextField
+                  fullWidth
+                  select
+                  label="Tipo de Seguro"
+                  {...register('tipoSeguro')}
+                  error={!!errors.tipoSeguro}
+                  helperText={errors.tipoSeguro?.message}
+                  defaultValue="ninguno"
+                >
+                  <MenuItem value="ninguno">No tengo seguro</MenuItem>
+                  <MenuItem value="iess">Seguro IESS</MenuItem>
+                  <MenuItem value="ejercito">Seguro del Ejército</MenuItem>
+                  <MenuItem value="policia">Seguro Policial</MenuItem>
+                  <MenuItem value="issfa">ISSFA (Instituto de Seguridad Social de las Fuerzas Armadas)</MenuItem>
+                  <MenuItem value="isspol">ISSPOL (Instituto de Seguridad Social de la Policía)</MenuItem>
+                  <MenuItem value="privado">Seguro Privado</MenuItem>
+                </TextField>
               </Grid>
             </Grid>
 

@@ -1,15 +1,10 @@
-/**
- * API de Terapias - RTK Query
- * Servicio mock para gestión de terapias
- */
-
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Terapia } from '../types';
 import { mockTerapias } from './mocks/terapiasMock';
 
 export const terapiasApi = createApi({
   reducerPath: 'terapiasApi',
-  baseQuery: fetchBaseQuery({ baseURL: '/api' }),
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
   tagTypes: ['Terapias'],
   endpoints: (builder) => ({
     // Obtener todas las terapias activas

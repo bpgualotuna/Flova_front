@@ -15,11 +15,19 @@ import { Box, CircularProgress } from '@mui/material';
 // Lazy loading de páginas
 const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage'));
 const TherapySelectionPage = lazy(() => import('../pages/therapies/TherapySelectionPage'));
+const DoctorSelectionPage = lazy(() => import('../pages/appointments/DoctorSelectionPage'));
 const CalendarPage = lazy(() => import('../pages/appointments/CalendarPage'));
 const AppointmentFormPage = lazy(() => import('../pages/appointments/AppointmentFormPage'));
 const ConfirmationPage = lazy(() => import('../pages/appointments/ConfirmationPage'));
 const MyCitasPage = lazy(() => import('../pages/citas/MyCitasPage'));
 const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'));
+
+// Páginas de Admin
+const UsersManagementPage = lazy(() => import('../pages/admin/UsersManagementPage'));
+const TherapiesManagementPage = lazy(() => import('../pages/admin/TherapiesManagementPage'));
+
+// Páginas de Médico
+const MedicoCitasPage = lazy(() => import('../pages/medico/MedicoCitasPage'));
 
 // Componente de loading
 const PageLoader = () => (
@@ -44,8 +52,9 @@ export const ROUTES = {
   // Dashboard
   DASHBOARD: '/dashboard',
   
-  // Terapias y citas
+  // Terapias y citas (Paciente)
   TERAPIAS: '/terapias',
+  SELECCION_MEDICO: '/seleccion-medico',
   CALENDARIO: '/calendario',
   FORMULARIO_CITA: '/formulario-cita',
   CONFIRMACION: '/confirmacion',
@@ -53,6 +62,13 @@ export const ROUTES = {
   
   // Perfil
   PERFIL: '/perfil',
+  
+  // Admin
+  ADMIN_USUARIOS: '/admin/usuarios',
+  ADMIN_TERAPIAS: '/admin/terapias',
+  
+  // Médico
+  MEDICO_CITAS: '/medico/citas',
 };
 
 export const router = createBrowserRouter([
@@ -93,6 +109,16 @@ export const router = createBrowserRouter([
           <Suspense fallback={<PageLoader />}>
             <RoleGuard allowedRoles={['paciente']}>
               <TherapySelectionPage />
+            </RoleGuard>
+          </Suspense>
+        ),
+      },
+      {
+        path: ROUTES.SELECCION_MEDICO,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RoleGuard allowedRoles={['paciente']}>
+              <DoctorSelectionPage />
             </RoleGuard>
           </Suspense>
         ),
@@ -142,6 +168,40 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <ProfilePage />
+          </Suspense>
+        ),
+      },
+      
+      // Rutas de Admin
+      {
+        path: ROUTES.ADMIN_USUARIOS,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RoleGuard allowedRoles={['admin']}>
+              <UsersManagementPage />
+            </RoleGuard>
+          </Suspense>
+        ),
+      },
+      {
+        path: ROUTES.ADMIN_TERAPIAS,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RoleGuard allowedRoles={['admin']}>
+              <TherapiesManagementPage />
+            </RoleGuard>
+          </Suspense>
+        ),
+      },
+      
+      // Rutas de Médico
+      {
+        path: ROUTES.MEDICO_CITAS,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RoleGuard allowedRoles={['medico']}>
+              <MedicoCitasPage />
+            </RoleGuard>
           </Suspense>
         ),
       },

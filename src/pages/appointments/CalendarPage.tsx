@@ -3,7 +3,7 @@
  * Paso 1: Selección de fecha y hora
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -15,20 +15,34 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Avatar,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon, Person as PersonIcon } from '@mui/icons-material';
 import { useGetHorariosDisponiblesQuery } from '../../services/citasApi';
 import { ROUTES } from '../../app/router';
+import { Terapia, Medico } from '../../types';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedHora, setSelectedHora] = useState<string>('');
-  const [selectedMedicoId, setSelectedMedicoId] = useState<number | string | null>(null);
+  const [terapia, setTerapia] = useState<Terapia | null>(null);
+  const [medico, setMedico] = useState<Medico | null>(null);
 
-  // Obtener terapia seleccionada
-  const terapiaStr = sessionStorage.getItem('selectedTerapia');
-  const terapia = terapiaStr ? JSON.parse(terapiaStr) : null;
+  // Cargar terapia y médico seleccionados desde sessionStorage
+  useEffect(() => {
+    const terapiaStr = sessionStorage.getItem('selectedTerapia');
+    const medicoStr = sessionStorage.getItem('selectedMedico');
+    
+    if (!terapiaStr || !medicoStr) {
+      // Si falta alguno, redirigir al inicio del flujo
+      navigate(ROUTES.TERAPIAS);
+      return;
+    }
+    
+    setTerapia(JSON.parse(terapiaStr));
+    setMedico(JSON.parse(medicoStr));
+  }, [navigate]);
 
   // Generar próximos 7 días
   const generateDates = () => {
@@ -43,32 +57,37 @@ export default function CalendarPage() {
   };
 
   const dates = generateDates();
-  const { data: horarios = [], isLoading } = useGetHorariosDisponiblesQuery(
+  
+  // Obtener horarios disponibles filtrados por médico seleccionado
+  const { data: horariosRaw = [], isLoading } = useGetHorariosDisponiblesQuery(
     { terapiaId: terapia?.id || 0, fecha: selectedDate || dates[0] },
-    { skip: !terapia }
+    { skip: !terapia || !medico }
   );
+  
+  // Filtrar horarios solo del médico seleccionado
+  const horarios = horariosRaw.filter(h => h.medicoId === medico?.id);
 
   const handleContinue = () => {
-    if (!selectedDate || !selectedHora || !selectedMedicoId) {
+    if (!selectedDate || !selectedHora || !medico) {
       return;
     }
 
     // Guardar selección en sessionStorage
     sessionStorage.setItem('appointmentData', JSON.stringify({
-      terapiaId: terapia.id,
+      terapiaId: terapia?.id,
       fecha: selectedDate,
       hora: selectedHora,
-      medicoId: selectedMedicoId,
+      medicoId: medico.id,
     }));
 
     navigate(ROUTES.FORMULARIO_CITA);
   };
 
-  if (!terapia) {
+  if (!terapia || !medico) {
     return (
       <Box>
         <Alert severity="error">
-          No se ha seleccionado una terapia. Por favor, selecciona una terapia primero.
+          No se ha completado la selección. Por favor, selecciona una terapia y un médico primero.
         </Alert>
         <Button onClick={() => navigate(ROUTES.TERAPIAS)} sx={{ mt: 2 }}>
           Volver a Terapias
@@ -83,17 +102,51 @@ export default function CalendarPage() {
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(ROUTES.TERAPIAS)}
+          onClick={() => navigate(ROUTES.SELECCION_MEDICO)}
           sx={{ mb: 2 }}
         >
-          Volver
+          Volver a Selección de Médico
         </Button>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Selecciona Fecha y Hora
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Terapia: <strong>{terapia.nombre}</strong>
-        </Typography>
+        
+        {/* Información de terapia y médico seleccionados */}
+        <Card sx={{ mt: 2, bgcolor: 'primary.50', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+          <CardContent>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Terapia seleccionada
+                </Typography>
+                <Typography variant="h6" fontWeight="600">
+                  {terapia.nombre}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {terapia.duracion} min • ${terapia.precio.toFixed(2)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
+                    <PersonIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Médico seleccionado
+                    </Typography>
+                    <Typography variant="h6" fontWeight="600">
+                      {medico.fullName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {medico.especialidad}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
       </Box>
 
       <Grid container spacing={3}>
@@ -117,7 +170,6 @@ export default function CalendarPage() {
                         onClick={() => {
                           setSelectedDate(date);
                           setSelectedHora('');
-                          setSelectedMedicoId(null);
                         }}
                         sx={{ py: 2, flexDirection: 'column' }}
                       >
@@ -162,7 +214,7 @@ export default function CalendarPage() {
               ) : (
                 <Grid container spacing={1} sx={{ mt: 1 }}>
                   {horarios.map((horario) => {
-                    const isSelected = selectedHora === horario.hora && selectedMedicoId === horario.medicoId;
+                    const isSelected = selectedHora === horario.hora;
                     
                     return (
                       <Grid item xs={6} sm={4} key={`${horario.hora}-${horario.medicoId}`}>
@@ -171,7 +223,6 @@ export default function CalendarPage() {
                           variant={isSelected ? 'contained' : 'outlined'}
                           onClick={() => {
                             setSelectedHora(horario.hora);
-                            setSelectedMedicoId(horario.medicoId);
                           }}
                           disabled={!horario.disponible}
                           sx={{ py: 1.5 }}

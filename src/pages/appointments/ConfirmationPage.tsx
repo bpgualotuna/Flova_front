@@ -34,9 +34,11 @@ export default function ConfirmationPage() {
 
   // Obtener datos guardados
   const terapiaStr = sessionStorage.getItem('selectedTerapia');
+  const medicoStr = sessionStorage.getItem('selectedMedico');
   const appointmentDataStr = sessionStorage.getItem('appointmentData');
   
   const terapia = terapiaStr ? JSON.parse(terapiaStr) : null;
+  const medico = medicoStr ? JSON.parse(medicoStr) : null;
   const appointmentData = appointmentDataStr ? JSON.parse(appointmentDataStr) : null;
 
   const handleConfirm = async () => {
@@ -53,6 +55,7 @@ export default function ConfirmationPage() {
 
       // Limpiar sessionStorage
       sessionStorage.removeItem('selectedTerapia');
+      sessionStorage.removeItem('selectedMedico');
       sessionStorage.removeItem('appointmentData');
 
       // Mostrar mensaje de éxito
@@ -69,7 +72,7 @@ export default function ConfirmationPage() {
     }
   };
 
-  if (!terapia || !appointmentData) {
+  if (!terapia || !medico || !appointmentData) {
     return (
       <Box>
         <Alert severity="error">
@@ -154,6 +157,15 @@ export default function ConfirmationPage() {
                     Terapia
                   </Typography>
                   <Typography variant="body1">{terapia.nombre}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Médico
+                  </Typography>
+                  <Typography variant="body1">{medico.fullName}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {medico.especialidad}
+                  </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">

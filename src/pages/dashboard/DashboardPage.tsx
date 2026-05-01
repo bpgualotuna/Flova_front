@@ -52,7 +52,7 @@ export default function DashboardPage() {
     { skip: user?.role !== 'paciente' }
   );
   
-  const { data: terapias = [], isLoading: loadingTerapias } = useGetTerapiasQuery();
+  const { data: terapias = [] } = useGetTerapiasQuery();
 
   const handleOpenModal = (cita: Cita) => {
     setSelectedCita(cita);

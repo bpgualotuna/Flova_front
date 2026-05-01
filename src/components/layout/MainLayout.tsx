@@ -28,7 +28,6 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   LocalHospital as HospitalIcon,
-  CalendarMonth as CalendarIcon,
   EventNote as EventNoteIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
@@ -62,6 +61,24 @@ const menuItems: MenuItem[] = [
     icon: <EventNoteIcon sx={{ color: '#FF9800' }} />,
     path: '/mis-citas',
     roles: ['paciente'],
+  },
+  {
+    text: 'Mis Citas',
+    icon: <EventNoteIcon sx={{ color: '#FF9800' }} />,
+    path: '/medico/citas',
+    roles: ['medico'],
+  },
+  {
+    text: 'Gestión de Usuarios',
+    icon: <PersonIcon sx={{ color: '#9C27B0' }} />,
+    path: '/admin/usuarios',
+    roles: ['admin'],
+  },
+  {
+    text: 'Gestión de Terapias',
+    icon: <HospitalIcon sx={{ color: '#4CAF50' }} />,
+    path: '/admin/terapias',
+    roles: ['admin'],
   },
   {
     text: 'Perfil',
