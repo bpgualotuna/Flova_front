@@ -6,7 +6,7 @@
 import { Cita } from '../types';
 
 /**
- * Valida que una cita se reserve con al menos 12 horas de anticipación
+ * Valida que una cita se reserve con más de 24 horas de anticipación
  * @param fecha Fecha de la cita (YYYY-MM-DD)
  * @param hora Hora de la cita (HH:mm)
  * @returns { valid: boolean, message?: string }
@@ -17,10 +17,11 @@ export const validarAnticipacionMinima = (fecha: string, hora: string): { valid:
   
   const diferenciaHoras = (fechaCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
   
-  if (diferenciaHoras < 12) {
+  // Debe ser MAYOR a 24 horas, no igual
+  if (diferenciaHoras <= 24) {
     return {
       valid: false,
-      message: 'Las citas deben reservarse con al menos 12 horas de anticipación.',
+      message: 'Las citas deben reservarse con más de 24 horas de anticipación.',
     };
   }
   
@@ -60,7 +61,7 @@ export const validarDobleReserva = (
 };
 
 /**
- * Valida que una cita pueda ser cancelada (mínimo 24 horas de anticipación)
+ * Valida que una cita pueda ser cancelada (más de 24 horas de anticipación)
  * @param fecha Fecha de la cita (YYYY-MM-DD)
  * @param hora Hora de la cita (HH:mm)
  * @returns { valid: boolean, message?: string }
@@ -71,10 +72,11 @@ export const validarCancelacion = (fecha: string, hora: string): { valid: boolea
   
   const diferenciaHoras = (fechaCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
   
-  if (diferenciaHoras < 24) {
+  // Debe ser MAYOR a 24 horas, no igual
+  if (diferenciaHoras <= 24) {
     return {
       valid: false,
-      message: 'Solo puedes cancelar citas con al menos 24 horas de anticipación.',
+      message: 'Solo puedes cancelar citas con más de 24 horas de anticipación.',
     };
   }
   

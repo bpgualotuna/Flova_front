@@ -128,7 +128,7 @@
 ## ⚠️ REGLAS DE NEGOCIO IMPLEMENTADAS
 
 ### Reserva de Citas
-1. **Anticipación mínima:** 12 horas desde el momento actual
+1. **Anticipación mínima:** 24 horas desde el momento actual
 2. **Sin doble reserva:** No se puede tener dos citas en la misma fecha y hora
 3. **Fecha futura:** No se pueden reservar citas en el pasado
 

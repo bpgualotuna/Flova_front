@@ -43,12 +43,70 @@ export const citasApi = createApi({
       queryFn: async ({ fecha }) => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const horarios = mockHorariosDisponibles.filter(
-          h => h.fecha === fecha && h.disponible
-        );
+        // Generar horarios dinámicamente para la fecha solicitada
+        const horarios: HorarioDisponible[] = [];
+        const ahora = new Date();
+        
+        // Horarios de 8:00 a 17:00 cada hora
+        for (let hora = 8; hora <= 17; hora++) {
+          const horaStr = `${hora.toString().padStart(2, '0')}:00`;
+          
+          // Crear fecha y hora completa para validar
+          const fechaHoraCita = new Date(`${fecha}T${horaStr}:00`);
+          const diferenciaHoras = (fechaHoraCita.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+          
+          // Solo mostrar horarios con MÁS de 24 horas de anticipación (no exactamente 24)
+          // Si no cumple con 24 horas, SIEMPRE debe estar NO disponible
+          const cumple24Horas = diferenciaHoras > 24;
+          
+          // Si no cumple 24 horas, forzar a false
+          let disponible = false;
+          if (cumple24Horas) {
+            // Solo si cumple 24 horas, aplicar randomización para simular disponibilidad
+            disponible = Math.random() > 0.3;
+          }
+          
+          // Agregar horarios para diferentes médicos
+          horarios.push({
+            fecha,
+            hora: horaStr,
+            disponible,
+            medicoId: 1,
+            medicoNombre: 'Dr. Carlos Mendoza',
+          });
+          
+          // Para otros médicos, misma lógica
+          let disponible2 = false;
+          if (cumple24Horas) {
+            disponible2 = Math.random() > 0.3;
+          }
+          
+          horarios.push({
+            fecha,
+            hora: horaStr,
+            disponible: disponible2,
+            medicoId: 2,
+            medicoNombre: 'Dra. María González',
+          });
+          
+          let disponible3 = false;
+          if (cumple24Horas) {
+            disponible3 = Math.random() > 0.3;
+          }
+          
+          horarios.push({
+            fecha,
+            hora: horaStr,
+            disponible: disponible3,
+            medicoId: 3,
+            medicoNombre: 'Dr. Roberto Silva',
+          });
+        }
         
         return { data: horarios };
       },
+      // Deshabilitar caché para siempre obtener horarios actualizados
+      keepUnusedDataFor: 0,
     }),
     
     // Crear nueva cita

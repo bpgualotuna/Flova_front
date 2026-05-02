@@ -1,229 +1,398 @@
-# ESPECIFICACIONES TÉCNICAS DEL BACKEND - SISTEMA DE GESTIÓN MÉDICA
+# 🔧 ESPECIFICACIONES TÉCNICAS DEL BACKEND
 
-## ÍNDICE
-1. [Arquitectura General](#1-arquitectura-general)
-2. [Modelos de Datos](#2-modelos-de-datos)
-3. [Endpoints de la API](#3-endpoints-de-la-api)
-4. [Autenticación y Seguridad](#4-autenticación-y-seguridad)
-5. [Reglas de Negocio](#5-reglas-de-negocio)
-6. [Validaciones](#6-validaciones)
+## Sistema de Gestión de Citas Médicas - API REST con Express
 
 ---
 
-## 1. ARQUITECTURA GENERAL
+## 📋 ÍNDICE
 
-### 1.1 Stack Tecnológico Recomendado
-- **Framework**: Node.js + Express / NestJS / Django / Spring Boot
-- **Base de Datos**: PostgreSQL / MySQL / MongoDB
-- **Autenticación**: JWT (JSON Web Tokens)
-- **Validación**: Joi / Yup / Class-validator
-- **ORM**: Prisma / TypeORM / Sequelize / Mongoose
-
-### 1.2 Estructura de Capas
-```
-Backend
-├── Controllers (Manejo de peticiones HTTP)
-├── Services (Lógica de negocio)
-├── Repositories (Acceso a datos)
-├── Models (Definición de entidades)
-├── Middlewares (Autenticación, validación)
-└── Utils (Funciones auxiliares)
-```
+1. [Stack Tecnológico](#1-stack-tecnológico)
+2. [Estructura del Proyecto](#2-estructura-del-proyecto)
+3. [Base de Datos](#3-base-de-datos)
+4. [Endpoints de la API](#4-endpoints-de-la-api)
+5. [Autenticación y Seguridad](#5-autenticación-y-seguridad)
+6. [Reglas de Negocio](#6-reglas-de-negocio)
+7. [Validaciones](#7-validaciones)
+8. [Instalación y Configuración](#8-instalación-y-configuración)
 
 ---
 
-## 2. MODELOS DE DATOS
+## 1. STACK TECNOLÓGICO
 
-### 2.1 Usuario (User)
-```typescript
-interface User {
-  id: number | string;
-  cedula: string;              // UNIQUE, NOT NULL
-  username: string;            // Igual a cédula
-  password: string;            // Hasheado con bcrypt
-  fullName: string;            // NOT NULL
-  email?: string;              // UNIQUE si existe
-  role: 'paciente' | 'medico' | 'admin';  // NOT NULL
-  
-  // Información personal
-  direccion?: string;
-  edad?: number;
-  sexo?: 'masculino' | 'femenino' | 'otro';
-  tieneSeguro: boolean;        // DEFAULT false (DEPRECATED)
-  tipoSeguro: 'ninguno' | 'iess' | 'ejercito' | 'policia' | 'privado' | 'issfa' | 'isspol';  // NOT NULL
-  telefono?: string;
-  avatar?: string;             // URL de la imagen
-  fotoPerfil?: string;
-  
-  // Campos específicos para médicos
-  especialidad?: string;       // Solo para role='medico'
-  numeroLicencia?: string;     // Solo para role='medico'
-  
-  // Auditoría
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;            // Soft delete
-}
-```
+### Backend
+- **Runtime:** Node.js 18+
+- **Framework:** Express.js 4.x
+- **Base de Datos:** PostgreSQL 14+ o MySQL 8+
+- **ORM:** Prisma o Sequelize
+- **Autenticación:** JWT (jsonwebtoken)
+- **Validación:** Joi o Zod
+- **Hash de contraseñas:** bcrypt
+- **CORS:** cors
+- **Variables de entorno:** dotenv
 
-**Índices:**
-- PRIMARY KEY: `id`
-- UNIQUE: `cedula`, `email`
-- INDEX: `role`, `especialidad`, `tipoSeguro`
+### Dependencias Recomendadas
 
-**Relaciones:**
-- Un Usuario puede tener muchas Citas (como paciente)
-- Un Usuario (médico) puede atender muchas Citas
-
-**Notas:**
-- El campo `tieneSeguro` se mantiene por compatibilidad pero está deprecado
-- El campo `tipoSeguro` es el nuevo estándar para identificar el tipo de seguro
-
----
-
-### 2.2 Terapia (Therapy)
-```typescript
-interface Terapia {
-  id: number | string;
-  nombre: string;              // NOT NULL
-  descripcion: string;         // NOT NULL
-  duracion: number;            // Duración en minutos, NOT NULL
-  precio: number;              // Precio en USD, NOT NULL
-  imagen?: string;             // URL de la imagen
-  especialidad: string;        // NOT NULL
-  activa: boolean;             // DEFAULT true
-  
-  // Auditoría
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-```
-
-**Índices:**
-- PRIMARY KEY: `id`
-- INDEX: `especialidad`, `activa`
-
-**Relaciones:**
-- Una Terapia puede tener muchas Citas
-
----
-
-### 2.3 Cita (Appointment)
-```typescript
-interface Cita {
-  id: number | string;
-  pacienteId: number | string;  // FOREIGN KEY -> User.id
-  medicoId: number | string;    // FOREIGN KEY -> User.id
-  terapiaId: number | string;   // FOREIGN KEY -> Terapia.id
-  
-  // Información de la cita
-  fecha: Date;                  // NOT NULL
-  hora: string;                 // HH:mm format, NOT NULL
-  estado: 'pendiente' | 'confirmada' | 'completada' | 'cancelada';  // DEFAULT 'pendiente'
-  
-  // Información médica
-  sintomas: string;             // NOT NULL
-  tieneExamenes: boolean;       // DEFAULT false
-  examenes?: ArchivoExamen[];   // JSON o tabla relacionada
-  
-  // Información adicional
-  notas?: string;               // Notas del médico
-  motivoCancelacion?: string;   // Si estado='cancelada'
-  
-  // Auditoría
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-```
-
-**Índices:**
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `pacienteId`, `medicoId`, `terapiaId`
-- INDEX: `fecha`, `estado`, `pacienteId`, `medicoId`
-- UNIQUE: `(medicoId, fecha, hora)` - Un médico no puede tener dos citas a la misma hora
-
-**Relaciones:**
-- Una Cita pertenece a un Paciente (User)
-- Una Cita pertenece a un Médico (User)
-- Una Cita pertenece a una Terapia
-
----
-
-### 2.4 ArchivoExamen (ExamFile)
-```typescript
-interface ArchivoExamen {
-  id: string;
-  citaId: number | string;     // FOREIGN KEY -> Cita.id
-  nombre: string;              // NOT NULL
-  tipo: string;                // MIME type
-  url: string;                 // URL del archivo en storage
-  tamaño: number;              // Tamaño en bytes
-  
-  // Auditoría
-  fechaSubida: Date;
-}
-```
-
-**Índices:**
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `citaId`
-
----
-
-### 2.5 HorarioAtencion (Schedule)
-```typescript
-interface HorarioAtencion {
-  id: number | string;
-  medicoId: number | string;   // FOREIGN KEY -> User.id
-  diaSemana: number;           // 0=Domingo, 6=Sábado
-  horaInicio: string;          // HH:mm format
-  horaFin: string;             // HH:mm format
-  
-  // Auditoría
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-**Índices:**
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `medicoId`
-- UNIQUE: `(medicoId, diaSemana, horaInicio)`
-
----
-
-## 3. ENDPOINTS DE LA API
-
-### 3.1 Autenticación
-
-#### POST /api/auth/register
-**Descripción:** Registro de nuevo usuario (solo pacientes)
-
-**Request Body:**
 ```json
 {
-  "nombresCompletos": "Juan Pérez García",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.0",              // PostgreSQL
+    "mysql2": "^3.3.0",           // MySQL (alternativa)
+    "@prisma/client": "^5.0.0",   // ORM
+    "jsonwebtoken": "^9.0.0",     // JWT
+    "bcrypt": "^5.1.0",           // Hash
+    "joi": "^17.9.0",             // Validación
+    "cors": "^2.8.5",             // CORS
+    "dotenv": "^16.0.3",          // Variables de entorno
+    "morgan": "^1.10.0",          // Logger
+    "helmet": "^7.0.0"            // Seguridad
+  },
+  "devDependencies": {
+    "prisma": "^5.0.0",
+    "nodemon": "^2.0.22",
+    "typescript": "^5.0.0",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.0.0"
+  }
+}
+```
+
+---
+
+## 2. ESTRUCTURA DEL PROYECTO
+
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── database.js          # Configuración de BD
+│   │   └── jwt.js               # Configuración JWT
+│   ├── controllers/
+│   │   ├── authController.js    # Login, registro
+│   │   ├── citasController.js   # CRUD de citas
+│   │   ├── medicosController.js # Gestión de médicos
+│   │   ├── terapiasController.js # Gestión de terapias
+│   │   └── usersController.js   # Gestión de usuarios
+│   ├── middlewares/
+│   │   ├── auth.js              # Verificación JWT
+│   │   ├── roleGuard.js         # Verificación de roles
+│   │   ├── validator.js         # Validación de datos
+│   │   └── errorHandler.js      # Manejo de errores
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Medico.js
+│   │   ├── Terapia.js
+│   │   ├── Cita.js
+│   │   └── HorarioAtencion.js
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── citas.routes.js
+│   │   ├── medicos.routes.js
+│   │   ├── terapias.routes.js
+│   │   └── users.routes.js
+│   ├── services/
+│   │   ├── authService.js
+│   │   ├── citasService.js
+│   │   └── emailService.js
+│   ├── utils/
+│   │   ├── validators.js        # Validaciones de negocio
+│   │   └── helpers.js
+│   ├── app.js                   # Configuración de Express
+│   └── server.js                # Punto de entrada
+├── prisma/
+│   └── schema.prisma            # Schema de Prisma
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
+```
+
+---
+
+## 3. BASE DE DATOS
+
+### 3.1 Diagrama de Relaciones
+
+```
+users (1) ──────< (N) citas
+  │                    │
+  │                    │
+  └─> (1:1) medicos    │
+        │              │
+        │              │
+        └──────────────┘
+        
+terapias (1) ──────< (N) citas
+
+medicos (1) ──────< (N) horarios_atencion
+```
+
+### 3.2 Tablas SQL
+
+#### Tabla: users
+
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  cedula VARCHAR(10) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  full_name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE,
+  telefono VARCHAR(10),
+  tipo_seguro VARCHAR(20) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'paciente',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  CHECK (role IN ('paciente', 'medico', 'admin')),
+  CHECK (tipo_seguro IN ('ninguno', 'iess', 'ejercito', 'policia', 'issfa', 'isspol', 'privado'))
+);
+
+CREATE INDEX idx_users_cedula ON users(cedula);
+CREATE INDEX idx_users_role ON users(role);
+```
+
+#### Tabla: medicos
+
+```sql
+CREATE TABLE medicos (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER UNIQUE NOT NULL,
+  especialidad VARCHAR(100) NOT NULL,
+  numero_licencia VARCHAR(50) UNIQUE NOT NULL,
+  calificacion DECIMAL(2,1) DEFAULT 0.0,
+  pacientes_atendidos INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (calificacion >= 0 AND calificacion <= 5)
+);
+
+CREATE INDEX idx_medicos_especialidad ON medicos(especialidad);
+```
+
+#### Tabla: horarios_atencion
+
+```sql
+CREATE TABLE horarios_atencion (
+  id SERIAL PRIMARY KEY,
+  medico_id INTEGER NOT NULL,
+  dia_semana INTEGER NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE CASCADE,
+  CHECK (dia_semana >= 0 AND dia_semana <= 6),
+  CHECK (hora_inicio < hora_fin)
+);
+
+CREATE INDEX idx_horarios_medico ON horarios_atencion(medico_id);
+```
+
+#### Tabla: terapias
+
+```sql
+CREATE TABLE terapias (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT NOT NULL,
+  especialidad VARCHAR(100) NOT NULL,
+  duracion INTEGER NOT NULL,
+  precio DECIMAL(10,2) NOT NULL,
+  imagen VARCHAR(255),
+  activa BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  CHECK (duracion > 0),
+  CHECK (precio >= 0)
+);
+
+CREATE INDEX idx_terapias_especialidad ON terapias(especialidad);
+CREATE INDEX idx_terapias_activa ON terapias(activa);
+```
+
+#### Tabla: citas
+
+```sql
+CREATE TABLE citas (
+  id SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL,
+  medico_id INTEGER NOT NULL,
+  terapia_id INTEGER NOT NULL,
+  fecha DATE NOT NULL,
+  hora TIME NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+  sintomas TEXT NOT NULL,
+  tiene_examenes BOOLEAN DEFAULT FALSE,
+  examenes TEXT[],
+  motivo_cancelacion TEXT,
+  notas_medico TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (paciente_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE CASCADE,
+  FOREIGN KEY (terapia_id) REFERENCES terapias(id) ON DELETE CASCADE,
+  CHECK (estado IN ('pendiente', 'confirmada', 'completada', 'cancelada')),
+  UNIQUE (medico_id, fecha, hora)
+);
+
+CREATE INDEX idx_citas_paciente ON citas(paciente_id);
+CREATE INDEX idx_citas_medico ON citas(medico_id);
+CREATE INDEX idx_citas_fecha ON citas(fecha);
+CREATE INDEX idx_citas_estado ON citas(estado);
+```
+
+### 3.3 Schema de Prisma
+
+```prisma
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  cedula      String   @unique @db.VarChar(10)
+  username    String   @unique @db.VarChar(50)
+  password    String   @db.VarChar(255)
+  fullName    String   @map("full_name") @db.VarChar(100)
+  email       String?  @unique @db.VarChar(100)
+  telefono    String?  @db.VarChar(10)
+  tipoSeguro  String   @map("tipo_seguro") @db.VarChar(20)
+  role        String   @default("paciente") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  medico      Medico?
+  citas       Cita[]   @relation("PacienteCitas")
+  
+  @@index([cedula])
+  @@index([role])
+  @@map("users")
+}
+
+model Medico {
+  id                  Int                 @id @default(autoincrement())
+  userId              Int                 @unique @map("user_id")
+  especialidad        String              @db.VarChar(100)
+  numeroLicencia      String              @unique @map("numero_licencia") @db.VarChar(50)
+  calificacion        Decimal             @default(0.0) @db.Decimal(2, 1)
+  pacientesAtendidos  Int                 @default(0) @map("pacientes_atendidos")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  horariosAtencion    HorarioAtencion[]
+  citas               Cita[]
+  
+  @@index([especialidad])
+  @@map("medicos")
+}
+
+model HorarioAtencion {
+  id          Int      @id @default(autoincrement())
+  medicoId    Int      @map("medico_id")
+  diaSemana   Int      @map("dia_semana")
+  horaInicio  String   @map("hora_inicio") @db.Time
+  horaFin     String   @map("hora_fin") @db.Time
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  medico      Medico   @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  
+  @@index([medicoId])
+  @@map("horarios_atencion")
+}
+
+model Terapia {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @db.VarChar(100)
+  descripcion   Text
+  especialidad  String   @db.VarChar(100)
+  duracion      Int
+  precio        Decimal  @db.Decimal(10, 2)
+  imagen        String?  @db.VarChar(255)
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  citas         Cita[]
+  
+  @@index([especialidad])
+  @@index([activa])
+  @@map("terapias")
+}
+
+model Cita {
+  id                  Int       @id @default(autoincrement())
+  pacienteId          Int       @map("paciente_id")
+  medicoId            Int       @map("medico_id")
+  terapiaId           Int       @map("terapia_id")
+  fecha               DateTime  @db.Date
+  hora                String    @db.Time
+  estado              String    @default("pendiente") @db.VarChar(20)
+  sintomas            Text
+  tieneExamenes       Boolean   @default(false) @map("tiene_examenes")
+  examenes            String[]
+  motivoCancelacion   String?   @map("motivo_cancelacion") @db.Text
+  notasMedico         String?   @map("notas_medico") @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  
+  paciente            User      @relation("PacienteCitas", fields: [pacienteId], references: [id], onDelete: Cascade)
+  medico              Medico    @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  terapia             Terapia   @relation(fields: [terapiaId], references: [id], onDelete: Cascade)
+  
+  @@unique([medicoId, fecha, hora])
+  @@index([pacienteId])
+  @@index([medicoId])
+  @@index([fecha])
+  @@index([estado])
+  @@map("citas")
+}
+```
+
+---
+
+## 4. ENDPOINTS DE LA API
+
+### 4.1 Autenticación
+
+#### POST /api/auth/register
+Registrar nuevo usuario (paciente).
+
+**Request:**
+```json
+{
   "cedula": "1234567890",
-  "password": "password123",
-  "direccion": "Av. Principal 123",
-  "edad": 35,
-  "sexo": "masculino",
+  "fullName": "Juan Pérez",
+  "email": "juan@example.com",
+  "telefono": "0987654321",
   "tipoSeguro": "iess",
-  "telefono": "0999888777",
-  "email": "juan@email.com"
+  "password": "password123"
 }
 ```
 
 **Response (201):**
 ```json
 {
-  "success": true,
   "message": "Usuario registrado exitosamente",
-  "data": {
-    "user": { /* User object */ },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "user": {
+    "id": 1,
+    "cedula": "1234567890",
+    "fullName": "Juan Pérez",
+    "email": "juan@example.com",
+    "role": "paciente"
   }
 }
 ```
@@ -231,15 +400,15 @@ interface HorarioAtencion {
 **Validaciones:**
 - Cédula única
 - Email único (si se proporciona)
-- Password mínimo 6 caracteres
-- Edad entre 1 y 120
+- Contraseña mínimo 6 caracteres
+- Tipo de seguro válido
 
 ---
 
 #### POST /api/auth/login
-**Descripción:** Inicio de sesión
+Iniciar sesión.
 
-**Request Body:**
+**Request:**
 ```json
 {
   "cedula": "1234567890",
@@ -250,11 +419,13 @@ interface HorarioAtencion {
 **Response (200):**
 ```json
 {
-  "success": true,
-  "message": "Inicio de sesión exitoso",
-  "data": {
-    "user": { /* User object sin password */ },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "cedula": "1234567890",
+    "fullName": "Juan Pérez",
+    "email": "juan@example.com",
+    "role": "paciente"
   }
 }
 ```
@@ -265,328 +436,74 @@ interface HorarioAtencion {
 
 ---
 
-#### GET /api/auth/me
-**Descripción:** Obtener información del usuario autenticado
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": { /* User object sin password */ }
-}
-```
-
----
-
-#### POST /api/auth/logout
-**Descripción:** Cerrar sesión (opcional, puede manejarse solo en frontend)
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Sesión cerrada exitosamente"
-}
-```
-
----
-
-### 3.2 Terapias
+### 4.2 Terapias
 
 #### GET /api/terapias
-**Descripción:** Obtener todas las terapias activas
-
-**Query Parameters:**
-- `especialidad` (opcional): Filtrar por especialidad
-- `activa` (opcional): true/false
+Obtener todas las terapias activas.
 
 **Response (200):**
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "nombre": "Fisioterapia General",
-      "descripcion": "Tratamiento para lesiones musculares...",
-      "duracion": 60,
-      "precio": 45.00,
-      "imagen": "https://...",
-      "especialidad": "Fisioterapia",
-      "activa": true
-    }
-  ]
-}
-```
-
----
-
-#### GET /api/terapias/:id
-**Descripción:** Obtener una terapia por ID
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": { /* Terapia object */ }
-}
-```
-
-**Errores:**
-- 404: Terapia no encontrada
-
----
-
-### 3.3 Citas
-
-#### GET /api/citas
-**Descripción:** Obtener citas del usuario autenticado
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `estado` (opcional): pendiente, confirmada, completada, cancelada
-- `fecha` (opcional): Filtrar por fecha específica
-- `limit` (opcional): Número de resultados
-- `offset` (opcional): Para paginación
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "pacienteId": 100,
-      "medicoId": 1,
-      "terapiaId": 1,
-      "fecha": "2026-05-05",
-      "hora": "10:00",
-      "estado": "confirmada",
-      "sintomas": "Dolor en la rodilla...",
-      "tieneExamenes": false,
-      "paciente": { /* User object */ },
-      "medico": { /* User object */ },
-      "terapia": { /* Terapia object */ }
-    }
-  ],
-  "pagination": {
-    "total": 10,
-    "limit": 10,
-    "offset": 0
+[
+  {
+    "id": 1,
+    "nombre": "Fisioterapia Deportiva",
+    "descripcion": "Tratamiento especializado...",
+    "especialidad": "Fisioterapia",
+    "duracion": 60,
+    "precio": 45.00,
+    "imagen": "https://...",
+    "activa": true
   }
-}
+]
 ```
 
 ---
 
-#### GET /api/citas/proximas
-**Descripción:** Obtener próximas citas del paciente
+#### POST /api/terapias
+Crear nueva terapia (Admin).
 
 **Headers:**
 ```
 Authorization: Bearer <token>
 ```
 
-**Response (200):**
+**Request:**
 ```json
 {
-  "success": true,
-  "data": [ /* Array de citas futuras ordenadas por fecha */ ]
-}
-```
-
----
-
-#### POST /api/citas
-**Descripción:** Crear nueva cita
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "terapiaId": 1,
-  "medicoId": 1,
-  "fecha": "2026-05-10",
-  "hora": "14:00",
-  "sintomas": "Dolor en la espalda baja...",
-  "tieneExamenes": true,
-  "examenes": [ /* Array de archivos */ ]
+  "nombre": "Terapia Ocupacional",
+  "descripcion": "Descripción...",
+  "especialidad": "Terapia Ocupacional",
+  "duracion": 45,
+  "precio": 50.00,
+  "imagen": "https://..."
 }
 ```
 
 **Response (201):**
 ```json
 {
-  "success": true,
-  "message": "Cita creada exitosamente",
-  "data": { /* Cita object */ }
-}
-```
-
-**Validaciones:**
-- Fecha debe ser futura
-- Hora debe estar disponible para el médico
-- Médico debe existir y tener role='medico'
-- Terapia debe estar activa
-
-**Errores:**
-- 400: Datos inválidos
-- 409: Horario no disponible
-
----
-
-#### PATCH /api/citas/:id
-**Descripción:** Actualizar estado de cita
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "estado": "confirmada",
-  "notas": "Notas adicionales..."
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Cita actualizada exitosamente",
-  "data": { /* Cita object */ }
-}
-```
-
-**Permisos:**
-- Paciente: Solo puede cancelar sus propias citas
-- Médico: Puede actualizar estado y agregar notas
-- Admin: Acceso completo
-
----
-
-#### DELETE /api/citas/:id (o PATCH con estado='cancelada')
-**Descripción:** Cancelar cita
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "motivoCancelacion": "Motivo de la cancelación..."
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Cita cancelada exitosamente"
-}
-```
-
-**Reglas:**
-- Solo se pueden cancelar citas con estado 'pendiente' o 'confirmada'
-- No se pueden cancelar citas pasadas
-
----
-
-### 3.4 Horarios Disponibles
-
-#### GET /api/horarios/disponibles
-**Descripción:** Obtener horarios disponibles para una fecha y terapia
-
-**Query Parameters:**
-- `terapiaId` (requerido): ID de la terapia
-- `fecha` (requerido): Fecha en formato YYYY-MM-DD
-- `medicoId` (opcional): Filtrar por médico específico
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "fecha": "2026-05-10",
-      "hora": "10:00",
-      "disponible": true,
-      "medicoId": 1,
-      "medicoNombre": "Dr. Carlos Mendoza"
-    }
-  ]
-}
-```
-
-**Lógica:**
-1. Obtener médicos que ofrecen la terapia (por especialidad)
-2. Obtener horarios de atención de cada médico para ese día
-3. Verificar citas existentes y marcar horarios ocupados
-4. Retornar solo horarios disponibles
-
----
-
-### 3.5 Médicos
-
-#### GET /api/medicos
-**Descripción:** Obtener lista de médicos
-
-**Query Parameters:**
-- `especialidad` (opcional): Filtrar por especialidad
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "fullName": "Dr. Carlos Mendoza",
-      "especialidad": "Fisioterapia",
-      "numeroLicencia": "MED-2024-001",
-      "calificacion": 4.8,
-      "pacientesAtendidos": 150
-    }
-  ]
+  "message": "Terapia creada exitosamente",
+  "terapia": { ... }
 }
 ```
 
 ---
 
-#### GET /api/medicos/:id
-**Descripción:** Obtener información detallada de un médico
+### 4.3 Médicos
+
+#### GET /api/medicos/especialidad/:especialidad
+Obtener médicos por especialidad.
 
 **Response (200):**
 ```json
-{
-  "success": true,
-  "data": {
+[
+  {
     "id": 1,
     "fullName": "Dr. Carlos Mendoza",
     "especialidad": "Fisioterapia",
-    "numeroLicencia": "MED-2024-001",
+    "numeroLicencia": "MED-12345",
+    "calificacion": 4.8,
+    "pacientesAtendidos": 245,
     "horarioAtencion": [
       {
         "diaSemana": 1,
@@ -595,15 +512,112 @@ Authorization: Bearer <token>
       }
     ]
   }
-}
+]
 ```
 
 ---
 
-### 3.6 Perfil de Usuario
+### 4.4 Citas
 
-#### GET /api/usuarios/perfil
-**Descripción:** Obtener perfil del usuario autenticado
+#### GET /api/horarios-disponibles
+Obtener horarios disponibles.
+
+**Query Params:**
+- `medicoId`: ID del médico
+- `fecha`: Fecha en formato YYYY-MM-DD
+
+**Response (200):**
+```json
+[
+  {
+    "fecha": "2026-05-03",
+    "hora": "08:00",
+    "disponible": true,
+    "medicoId": 1
+  },
+  {
+    "fecha": "2026-05-03",
+    "hora": "09:00",
+    "disponible": true,
+    "medicoId": 1
+  }
+]
+```
+
+**Lógica:**
+```sql
+SELECT 
+  h.fecha,
+  h.hora,
+  CASE 
+    WHEN CONCAT(h.fecha, ' ', h.hora) > DATE_ADD(NOW(), INTERVAL 24 HOUR)
+      AND NOT EXISTS (
+        SELECT 1 FROM citas c 
+        WHERE c.medico_id = h.medico_id 
+          AND c.fecha = h.fecha 
+          AND c.hora = h.hora
+          AND c.estado IN ('pendiente', 'confirmada')
+      )
+    THEN TRUE
+    ELSE FALSE
+  END AS disponible
+FROM horarios h
+WHERE h.medico_id = ? AND h.fecha = ?
+```
+
+---
+
+#### POST /api/citas
+Crear nueva cita (Paciente).
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Request:**
+```json
+{
+  "medicoId": 1,
+  "terapiaId": 1,
+  "fecha": "2026-05-03",
+  "hora": "10:00",
+  "sintomas": "Dolor en rodilla derecha",
+  "tieneExamenes": false
+}
+```
+
+**Validaciones:**
+1. Anticipación >24 horas
+2. Sin doble reserva
+3. Horario disponible
+4. Médico y terapia existen
+
+**Response (201):**
+```json
+{
+  "message": "Cita creada exitosamente",
+  "cita": {
+    "id": 1,
+    "pacienteId": 1,
+    "medicoId": 1,
+    "terapiaId": 1,
+    "fecha": "2026-05-03",
+    "hora": "10:00",
+    "estado": "pendiente"
+  }
+}
+```
+
+**Errores:**
+- 400: Validación fallida
+- 401: No autenticado
+- 409: Conflicto (doble reserva)
+
+---
+
+#### GET /api/citas/paciente/:id
+Obtener citas de un paciente.
 
 **Headers:**
 ```
@@ -612,307 +626,345 @@ Authorization: Bearer <token>
 
 **Response (200):**
 ```json
-{
-  "success": true,
-  "data": { /* User object sin password */ }
-}
+[
+  {
+    "id": 1,
+    "fecha": "2026-05-03",
+    "hora": "10:00",
+    "estado": "pendiente",
+    "terapia": {
+      "nombre": "Fisioterapia Deportiva",
+      "duracion": 60,
+      "precio": 45.00
+    },
+    "medico": {
+      "fullName": "Dr. Carlos Mendoza",
+      "especialidad": "Fisioterapia"
+    }
+  }
+]
 ```
 
 ---
 
-#### PATCH /api/usuarios/perfil
-**Descripción:** Actualizar perfil del usuario
+#### DELETE /api/citas/:id
+Cancelar cita (Paciente).
 
 **Headers:**
 ```
 Authorization: Bearer <token>
 ```
 
-**Request Body:**
+**Request:**
 ```json
 {
-  "telefono": "0999888777",
-  "direccion": "Nueva dirección",
-  "email": "nuevo@email.com"
+  "motivo": "Tengo un compromiso urgente"
 }
 ```
+
+**Validaciones:**
+1. Anticipación >24 horas
+2. Estado: pendiente o confirmada
+3. Usuario es el paciente de la cita
 
 **Response (200):**
 ```json
 {
-  "success": true,
-  "message": "Perfil actualizado exitosamente",
-  "data": { /* User object actualizado */ }
+  "message": "Cita cancelada exitosamente"
 }
 ```
 
+**Errores:**
+- 400: No se puede cancelar (< 24 horas)
+- 403: No autorizado
+- 404: Cita no encontrada
+
 ---
 
-## 4. AUTENTICACIÓN Y SEGURIDAD
+## 5. AUTENTICACIÓN Y SEGURIDAD
 
-### 4.1 JWT (JSON Web Tokens)
-**Payload del Token:**
-```json
-{
-  "id": 100,
-  "cedula": "1234567890",
-  "role": "paciente",
-  "iat": 1619000000,
-  "exp": 1619086400
-}
+### 5.1 JWT
+
+**Configuración:**
+```javascript
+// src/config/jwt.js
+module.exports = {
+  secret: process.env.JWT_SECRET,
+  expiresIn: '7d'
+};
 ```
 
-**Expiración:** 24 horas (configurable)
+**Middleware de Autenticación:**
+```javascript
+// src/middlewares/auth.js
+const jwt = require('jsonwebtoken');
+const { secret } = require('../config/jwt');
 
-**Secret Key:** Variable de entorno `JWT_SECRET`
-
----
-
-### 4.2 Middleware de Autenticación
-```typescript
-function authenticateToken(req, res, next) {
-  const token = req.headers['authorization']?.split(' ')[1];
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
     return res.status(401).json({ error: 'Token no proporcionado' });
   }
   
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido' });
-    }
-    req.user = user;
+  try {
+    const decoded = jwt.verify(token, secret);
+    req.user = decoded;
     next();
-  });
-}
+  } catch (error) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+};
+
+module.exports = authMiddleware;
 ```
 
----
-
-### 4.3 Middleware de Autorización por Roles
-```typescript
-function authorizeRoles(...roles) {
+**Middleware de Roles:**
+```javascript
+// src/middlewares/roleGuard.js
+const roleGuard = (allowedRoles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Acceso denegado' });
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
     }
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+    
     next();
   };
-}
+};
+
+module.exports = roleGuard;
 ```
 
-**Uso:**
-```typescript
-router.get('/admin/usuarios', 
-  authenticateToken, 
-  authorizeRoles('admin'), 
-  getUsuarios
-);
-```
+### 5.2 Hash de Contraseñas
 
----
-
-### 4.4 Hashing de Contraseñas
-**Librería:** bcrypt
-
-**Ejemplo:**
-```typescript
-import bcrypt from 'bcrypt';
+```javascript
+const bcrypt = require('bcrypt');
 
 // Al registrar
 const hashedPassword = await bcrypt.hash(password, 10);
 
-// Al hacer login
+// Al login
 const isValid = await bcrypt.compare(password, user.password);
 ```
 
 ---
 
-## 5. REGLAS DE NEGOCIO
+## 6. REGLAS DE NEGOCIO
 
-### 5.1 Citas
+### 6.1 Validación de Anticipación Mínima
 
-#### 5.1.1 Restricciones de Reserva
+```javascript
+// src/utils/validators.js
+const validarAnticipacionMinima = (fecha, hora) => {
+  const ahora = new Date();
+  const fechaCita = new Date(`${fecha}T${hora}:00`);
+  const diferenciaHoras = (fechaCita - ahora) / (1000 * 60 * 60);
+  
+  if (diferenciaHoras <= 24) {
+    throw new Error('Las citas deben reservarse con más de 24 horas de anticipación');
+  }
+};
+```
 
-**A. Anticipación Mínima (12 horas)**
-- Las citas deben reservarse con al menos 12 horas de anticipación desde el momento actual
-- Ejemplo: Si son las 10:00 AM del día 1, no se puede reservar una cita antes de las 10:00 PM del día 1
-- Validación: `fechaHoraCita - fechaHoraActual >= 12 horas`
+### 6.2 Validación de Doble Reserva
 
-**B. Restricción de Doble Reserva**
-- Un usuario NO puede reservar dos citas en la misma fecha y hora
-- Esto aplica incluso si son de diferentes especialidades o médicos
-- Validación: Verificar que no exista otra cita activa (pendiente o confirmada) para el mismo paciente en la misma fecha y hora
-
-**C. Cancelación con Anticipación (24 horas)**
-- Una cita solo puede cancelarse con mínimo 24 horas de anticipación respecto a la fecha de la cita
-- Ejemplo: Si la cita es el día 5 a las 10:00 AM, solo se puede cancelar antes del día 4 a las 10:00 AM
-- Validación: `fechaHoraCita - fechaHoraActual >= 24 horas`
-- Solo se pueden cancelar citas con estado 'pendiente' o 'confirmada'
-
-#### 5.1.2 Horarios Disponibles
-- Un médico no puede tener dos citas a la misma hora
-- Las citas solo se pueden agendar en horarios de atención del médico
-- No se pueden agendar citas en fechas pasadas
-
-#### 5.1.3 Estados de Citas
-- `pendiente`: Cita creada, esperando confirmación
-- `confirmada`: Cita confirmada por el sistema o médico
-- `completada`: Cita realizada
-- `cancelada`: Cita cancelada por paciente o médico
-
-#### 5.1.4 Notificaciones (Futuro)
-- Enviar email/SMS al crear cita
-- Recordatorio 24 horas antes de la cita
-- Notificación al cancelar cita
-
----
-
-### 5.2 Usuarios
-
-#### 5.2.1 Registro
-- Solo se pueden registrar pacientes desde el frontend público
-- Médicos y admins se crean desde panel de administración
-- El campo `tipoSeguro` es obligatorio en el registro
-
-#### 5.2.2 Tipos de Seguro
-Los tipos de seguro disponibles son:
-- `ninguno`: No tiene seguro
-- `iess`: Instituto Ecuatoriano de Seguridad Social
-- `ejercito`: Seguro del Ejército
-- `policia`: Seguro Policial
-- `issfa`: Instituto de Seguridad Social de las Fuerzas Armadas
-- `isspol`: Instituto de Seguridad Social de la Policía
-- `privado`: Seguro Privado
-
-#### 5.2.3 Roles y Permisos
-
-**Paciente:**
-- Puede agendar citas
-- Puede ver sus propias citas
-- Puede cancelar sus citas (con restricción de 24 horas)
-- Puede actualizar su perfil
-
-**Médico:**
-- Puede ver sus citas asignadas
-- Puede actualizar estado de citas (confirmar, completar)
-- Puede agregar notas a las citas
-- Puede ver información de sus pacientes
-
-**Admin:**
-- Acceso completo al sistema
-- Puede gestionar usuarios (crear, editar, eliminar)
-- Puede gestionar terapias (crear, editar, activar/desactivar)
-- Puede ver todas las citas del sistema
-- Puede asignar roles a usuarios
-
----
-
-### 5.3 Terapias
-1. Solo terapias activas se muestran en el frontend público
-2. Al desactivar una terapia, no se cancelan citas existentes
-3. Precio y duración son obligatorios
-4. Solo administradores pueden crear, editar o eliminar terapias
-
----
-
-## 6. VALIDACIONES
-
-### 6.1 Usuario
-- `cedula`: 10-13 caracteres, único
-- `password`: Mínimo 6 caracteres
-- `email`: Formato válido, único
-- `edad`: 1-120
-- `telefono`: 10 dígitos (opcional)
-- `fullName`: 3-100 caracteres
-- `tipoSeguro`: Debe ser uno de los valores permitidos (ninguno, iess, ejercito, policia, privado, issfa, isspol)
-
-### 6.2 Cita
-- `fecha`: Fecha futura
-- `hora`: Formato HH:mm
-- `sintomas`: Mínimo 10 caracteres
-- `terapiaId`: Debe existir y estar activa
-- `medicoId`: Debe existir y tener role='medico'
-- **Anticipación mínima**: 12 horas desde el momento actual
-- **Sin doble reserva**: No puede haber otra cita del mismo paciente en la misma fecha y hora
-- **Cancelación**: Solo con 24 horas de anticipación
-
-### 6.3 Terapia
-- `nombre`: 3-100 caracteres
-- `descripcion`: 10-500 caracteres
-- `duracion`: 15-180 minutos
-- `precio`: Mayor a 0
-
----
-
-## 7. VARIABLES DE ENTORNO
-
-```env
-# Base de datos
-DATABASE_URL=postgresql://user:password@localhost:5432/gestion_medica
-
-# JWT
-JWT_SECRET=your-secret-key-here
-JWT_EXPIRATION=24h
-
-# Puerto
-PORT=8080
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
-
-# Storage (para archivos)
-STORAGE_TYPE=local|s3
-AWS_BUCKET_NAME=medical-files
-AWS_REGION=us-east-1
-
-# Email (opcional)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-password
+```javascript
+const validarDobleReserva = async (pacienteId, fecha, hora) => {
+  const citaExistente = await prisma.cita.findFirst({
+    where: {
+      pacienteId,
+      fecha,
+      hora,
+      estado: { in: ['pendiente', 'confirmada'] }
+    }
+  });
+  
+  if (citaExistente) {
+    throw new Error('Ya tienes una cita reservada en esta fecha y hora');
+  }
+};
 ```
 
 ---
 
-## 8. RESPUESTAS DE ERROR ESTÁNDAR
+## 7. VALIDACIONES
+
+### 7.1 Schema de Validación (Joi)
+
+```javascript
+const Joi = require('joi');
+
+const registerSchema = Joi.object({
+  cedula: Joi.string().length(10).required(),
+  fullName: Joi.string().min(3).required(),
+  email: Joi.string().email().optional(),
+  telefono: Joi.string().length(10).required(),
+  tipoSeguro: Joi.string().valid('ninguno', 'iess', 'ejercito', 'policia', 'issfa', 'isspol', 'privado').required(),
+  password: Joi.string().min(6).required()
+});
+
+const citaSchema = Joi.object({
+  medicoId: Joi.number().required(),
+  terapiaId: Joi.number().required(),
+  fecha: Joi.date().required(),
+  hora: Joi.string().pattern(/^([01]\d|2[0-3]):([0-5]\d)$/).required(),
+  sintomas: Joi.string().min(10).required(),
+  tieneExamenes: Joi.boolean().required()
+});
+```
+
+---
+
+## 8. INSTALACIÓN Y CONFIGURACIÓN
+
+### 8.1 Inicializar Proyecto
+
+```bash
+# Crear directorio
+mkdir backend
+cd backend
+
+# Inicializar npm
+npm init -y
+
+# Instalar dependencias
+npm install express pg @prisma/client jsonwebtoken bcrypt joi cors dotenv morgan helmet
+
+# Instalar dev dependencies
+npm install -D prisma nodemon typescript @types/express @types/node
+
+# Inicializar Prisma
+npx prisma init
+```
+
+### 8.2 Variables de Entorno
+
+```env
+# .env
+NODE_ENV=development
+PORT=3000
+
+# Base de datos
+DATABASE_URL="postgresql://user:password@localhost:5432/gestion_citas"
+
+# JWT
+JWT_SECRET=tu_secreto_super_seguro_aqui
+
+# CORS
+CORS_ORIGIN=http://localhost:5173
+```
+
+### 8.3 Scripts de package.json
 
 ```json
 {
-  "success": false,
-  "error": "Mensaje de error descriptivo",
-  "code": "ERROR_CODE",
-  "details": { /* Detalles adicionales si aplica */ }
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  }
 }
 ```
 
-**Códigos HTTP:**
-- 200: OK
-- 201: Created
-- 400: Bad Request (datos inválidos)
-- 401: Unauthorized (no autenticado)
-- 403: Forbidden (sin permisos)
-- 404: Not Found
-- 409: Conflict (ej: horario ocupado)
-- 500: Internal Server Error
+### 8.4 Configuración de Express
+
+```javascript
+// src/app.js
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
+const authRoutes = require('./routes/auth.routes');
+const citasRoutes = require('./routes/citas.routes');
+const medicosRoutes = require('./routes/medicos.routes');
+const terapiasRoutes = require('./routes/terapias.routes');
+const usersRoutes = require('./routes/users.routes');
+
+const errorHandler = require('./middlewares/errorHandler');
+
+const app = express();
+
+// Middlewares
+app.use(helmet());
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/citas', citasRoutes);
+app.use('/api/medicos', medicosRoutes);
+app.use('/api/terapias', terapiasRoutes);
+app.use('/api/users', usersRoutes);
+
+// Manejo de errores
+app.use(errorHandler);
+
+module.exports = app;
+```
+
+```javascript
+// src/server.js
+require('dotenv').config();
+const app = require('./app');
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+});
+```
+
+### 8.5 Migrar Base de Datos
+
+```bash
+# Generar migración
+npx prisma migrate dev --name init
+
+# Generar cliente de Prisma
+npx prisma generate
+
+# Abrir Prisma Studio (GUI)
+npx prisma studio
+```
 
 ---
 
-## CONCLUSIÓN
+## 📝 NOTAS FINALES
 
-Este documento proporciona las especificaciones completas para implementar el backend del sistema de gestión médica. El backend debe:
+### Prioridades de Implementación
 
-1. **Ser RESTful**: Seguir principios REST
-2. **Ser Seguro**: Implementar autenticación JWT y validaciones
-3. **Ser Escalable**: Arquitectura en capas
-4. **Ser Documentado**: Swagger/OpenAPI para documentación de API
-5. **Ser Testeado**: Unit tests y integration tests
+1. ✅ **Fase 1:** Autenticación y usuarios
+2. ✅ **Fase 2:** Terapias y médicos
+3. ✅ **Fase 3:** Citas y horarios
+4. ✅ **Fase 4:** Validaciones de negocio
+5. ✅ **Fase 5:** Notificaciones y extras
 
-### Próximos Pasos:
-1. Implementar modelos y migraciones de base de datos
-2. Crear endpoints de autenticación
-3. Implementar CRUD de terapias y citas
-4. Agregar validaciones y manejo de errores
-5. Implementar sistema de notificaciones
-6. Agregar tests automatizados
-7. Documentar API con Swagger
+### Consideraciones de Seguridad
+
+- Usar HTTPS en producción
+- Implementar rate limiting
+- Validar todos los inputs
+- Sanitizar datos de usuario
+- Implementar CSRF protection
+- Logs de auditoría
+
+### Testing
+
+- Tests unitarios con Jest
+- Tests de integración
+- Tests de endpoints con Supertest
+
+---
+
+**Versión:** 1.0  
+**Última actualización:** Mayo 2026  
+**Estado:** Especificaciones completas para implementación

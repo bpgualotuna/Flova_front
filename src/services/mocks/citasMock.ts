@@ -34,7 +34,7 @@ export const mockCitas: Cita[] = [
 // Generar horarios disponibles para los próximos 7 días
 const generarHorariosDisponibles = (): HorarioDisponible[] => {
   const horarios: HorarioDisponible[] = [];
-  const hoy = new Date('2026-04-26');
+  const hoy = new Date(); // Usar fecha actual del sistema
   
   for (let dia = 1; dia <= 7; dia++) {
     const fecha = new Date(hoy);

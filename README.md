@@ -1,318 +1,228 @@
-# Sistema de Gestión Médica - Frontend
+# 🏥 Sistema de Gestión de Citas Médicas - SER SALUD
 
-Sistema profesional de gestión de pacientes y citas médicas desarrollado con React + TypeScript, Material-UI y Redux Toolkit.
+Sistema web completo para la gestión de citas médicas con tres tipos de usuarios: Pacientes, Médicos y Administradores.
 
-## 🏥 Características
+## 📋 Características Principales
 
-- ✅ **Autenticación completa** con login y registro
-- ✅ **Sistema de roles** (Paciente, Médico, Admin) con permisos diferenciados
-- ✅ **Gestión de citas médicas** con flujo de 3 pasos
-- ✅ **Reglas de negocio** implementadas:
-  - Anticipación mínima de 12 horas para reservar
-  - Restricción de doble reserva
-  - Cancelación con 24 horas de anticipación
-- ✅ **Selección de terapias** con cards visuales
-- ✅ **Calendario de disponibilidad** de médicos
-- ✅ **Formulario médico** con síntomas y exámenes
-- ✅ **Dashboard interactivo** con estadísticas
-- ✅ **Gestión de perfil** de usuario
-- ✅ **Panel de administración** para gestionar usuarios y terapias
-- ✅ **Panel de médico** para gestionar citas y pacientes
-- ✅ **Tipos de seguro** (IESS, Ejército, Policía, Privado, etc.)
+- ✅ **Registro y autenticación** de usuarios con roles
+- ✅ **Reserva de citas** con flujo de 5 pasos (Terapia → Médico → Calendario → Formulario → Confirmación)
+- ✅ **Gestión de terapias** por administradores
+- ✅ **Gestión de usuarios** por administradores
+- ✅ **Visualización de citas** para médicos
+- ✅ **Historial de citas** para pacientes
+- ✅ **Validación de reglas de negocio** (anticipación >24h, sin doble reserva)
+- ✅ **Selección de médico** por especialidad de terapia
+- ✅ **Tipos de seguro** (IESS, Ejército, Policía, ISSFA, ISSPOL, Privado)
 - ✅ **Diseño responsive** adaptado a móviles y desktop
-- ✅ **Datos mock** para pruebas sin backend
 
-## 🎨 Arquitectura
+## 🚀 Tecnologías
 
-Este proyecto está basado en las especificaciones técnicas del documento `ESPECIFICACIONES_TECNICAS_FRONTEND_GESTION_RIESGOS.md`, adaptado al dominio médico:
+### Frontend
+- **React 18** + TypeScript
+- **Material-UI (MUI) v7** - Componentes UI
+- **Redux Toolkit** + RTK Query - Estado global y cache
+- **React Router v6** - Navegación
+- **React Hook Form** + Zod - Formularios y validación
+- **SweetAlert2** - Alertas
+- **Vite** - Build tool
 
-### Stack Tecnológico
-- **React 19.2.0** con TypeScript
-- **Vite 6.3.5** como build tool
-- **Material-UI (MUI) 7.3.7** para componentes UI
-- **Redux Toolkit 2.11.2** + RTK Query para estado global
-- **React Router DOM 7.13.0** para navegación
-- **React Hook Form 7.71.1** + Zod 4.3.6 para formularios
-- **Axios 1.13.3** para peticiones HTTP
-- **SweetAlert2 11.26.24** para notificaciones
+### Backend (Pendiente)
+- **Node.js** + Express
+- **PostgreSQL** / MySQL
+- **JWT** - Autenticación
+- **Bcrypt** - Hash de contraseñas
 
-### Estructura del Proyecto
+## 🎯 Flujo de Reserva de Citas
+
 ```
-src/
-├── app/                      # Configuración de la aplicación
-│   ├── theme/               # Sistema de estilos MUI
-│   │   ├── colors.ts        # Paleta de colores médicos
-│   │   ├── typography.ts    # Configuración tipográfica
-│   │   └── index.ts         # Tema MUI completo
-│   ├── store.ts             # Store de Redux
-│   ├── router.tsx           # Configuración de rutas
-│   └── axiosClient.ts       # Cliente HTTP con interceptores
-├── components/              # Componentes reutilizables
-│   ├── auth/                # Componentes de autenticación
-│   │   ├── ProtectedRoute.tsx
-│   │   └── RoleGuard.tsx
-│   └── layout/              # Componentes de layout
-│       └── MainLayout.tsx   # Layout principal con sidebar
-├── contexts/                # Contextos React
-│   └── AuthContext.tsx      # Contexto de autenticación
-├── pages/                   # Páginas de la aplicación
-│   ├── auth/                # Login y Registro
-│   ├── dashboard/           # Dashboard principal
-│   ├── therapies/           # Selección de terapias
-│   ├── appointments/        # Flujo de reserva de citas
-│   ├── citas/               # Gestión de citas
-│   └── profile/             # Perfil de usuario
-├── services/                # Servicios API (RTK Query)
-│   ├── authService.ts       # Servicio de autenticación
-│   ├── citasApi.ts          # API de citas
-│   ├── terapiasApi.ts       # API de terapias
-│   ├── medicosApi.ts        # API de médicos
-│   └── mocks/               # Datos mock para desarrollo
-├── types/                   # Tipos TypeScript
-│   └── index.ts             # Definiciones de tipos
-└── utils/                   # Utilidades
+1. Selección de Terapia (/terapias)
+   ↓
+2. Selección de Médico (/seleccion-medico)
+   - Filtrado por especialidad de la terapia
+   ↓
+3. Selección de Fecha y Hora (/calendario)
+   - Validación: >24 horas de anticipación
+   ↓
+4. Formulario de Información Médica (/formulario-cita)
+   - Síntomas, exámenes
+   ↓
+5. Confirmación y Creación de Cita (/confirmacion)
 ```
 
-## 🚀 Instalación y Ejecución
+## 📝 Reglas de Negocio
 
-### Prerrequisitos
-- Node.js 18+ y npm/yarn
+### Reserva de Citas
+- ✅ **Anticipación mínima:** MÁS de 24 horas (no exactamente 24)
+- ✅ **Sin doble reserva:** Un paciente no puede tener dos citas en la misma fecha/hora
+- ✅ **Médico por especialidad:** Solo médicos que pueden realizar la terapia seleccionada
 
-### Pasos de Instalación
+### Cancelación de Citas
+- ✅ **Anticipación mínima:** MÁS de 24 horas
+- ✅ **Motivo obligatorio:** Se debe proporcionar razón de cancelación
 
-1. **Clonar el repositorio**
+## 🔐 Credenciales de Prueba
+
+### Paciente
+- **Cédula:** `1234567890`
+- **Contraseña:** `password123`
+
+### Médicos
+- **Dr. Carlos Mendoza (Fisioterapia):** `1111111111` / `medico123`
+- **Dra. María González (Terapia Ocupacional):** `0987654321` / `medico123`
+- **Dr. Roberto Silva (Psicología):** `1122334455` / `medico123`
+
+### Administrador
+- **Cédula:** `admin`
+- **Contraseña:** `admin123`
+
+## 🛠️ Instalación y Ejecución
+
+### Requisitos Previos
+- Node.js 18+
+- npm o yarn
+
+### Instalación
+
 ```bash
-git clone <repository-url>
-cd gestion-citas-medicas
-```
+# Clonar repositorio
+git clone <url-repositorio>
+cd flova_front
 
-2. **Instalar dependencias**
-```bash
+# Instalar dependencias
 npm install
-```
 
-3. **Configurar variables de entorno**
-```bash
+# Configurar variables de entorno
 cp .env.example .env
 ```
 
-Editar `.env` si es necesario:
-```env
-VITE_API_BASE_URL=http://localhost:8080/api
-VITE_APP_NAME=Sistema de Gestión Médica
-```
+### Ejecución en Desarrollo
 
-4. **Ejecutar en modo desarrollo**
 ```bash
+# Iniciar servidor de desarrollo
 npm run dev
+
+# Abrir en navegador: http://localhost:5173
 ```
 
-La aplicación estará disponible en `http://localhost:3000`
-
-### Scripts Disponibles
+### Compilación para Producción
 
 ```bash
-npm run dev          # Ejecutar en modo desarrollo
-npm run build        # Compilar para producción
-npm run build:check  # Compilar con verificación de tipos
-npm run preview      # Previsualizar build de producción
-npm run lint         # Ejecutar linter
+# Compilar
+npm run build
+
+# Vista previa
+npm run preview
 ```
 
-## 👤 Credenciales de Prueba
+## 📚 Documentación
+
+### Documentos Principales
+
+1. **[GUIA_COMPLETA_SISTEMA.md](./GUIA_COMPLETA_SISTEMA.md)**
+   - Guía completa del sistema
+   - Flujos de usuario detallados
+   - Roles y permisos
+   - Reglas de negocio
+   - Estructura del frontend
+   - Credenciales de prueba
+
+2. **[BACKEND_TECHNICAL_SPECIFICATION.md](./BACKEND_TECHNICAL_SPECIFICATION.md)**
+   - Especificaciones técnicas para el backend
+   - Modelos de base de datos (SQL + Prisma)
+   - Endpoints de la API REST
+   - Validaciones y reglas de negocio
+   - Ejemplos de requests/responses
+   - Guía de implementación con Express
+
+3. **[CREDENCIALES_PRUEBA.md](./CREDENCIALES_PRUEBA.md)**
+   - Credenciales de todos los usuarios de prueba
+   - Datos de ejemplo de terapias
+
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── app/                    # Configuración global
+│   ├── router.tsx         # Rutas de la aplicación
+│   ├── store.ts           # Store de Redux
+│   └── theme/             # Tema de MUI
+├── components/            # Componentes reutilizables
+│   ├── auth/              # Protección de rutas
+│   └── layout/            # Layout principal
+├── contexts/              # React Context
+├── pages/                 # Páginas de la aplicación
+│   ├── auth/              # Login y registro
+│   ├── appointments/      # Flujo de reserva de citas
+│   ├── admin/             # Gestión (admin)
+│   ├── medico/            # Citas (médico)
+│   └── citas/             # Mis citas (paciente)
+├── services/              # APIs y mocks
+│   ├── authService.ts
+│   ├── citasApi.ts
+│   ├── medicosApi.ts
+│   ├── terapiasApi.ts
+│   └── mocks/             # Datos de prueba
+├── types/                 # Tipos TypeScript
+└── utils/                 # Utilidades y validaciones
+```
+
+## 🎨 Roles y Permisos
 
 ### Paciente
-- **Usuario:** 1234567890
-- **Contraseña:** password123
-- **Permisos:** Reservar citas, ver citas, cancelar citas, actualizar perfil
+- Reservar citas
+- Ver y cancelar sus citas
+- Editar su perfil
 
 ### Médico
-- **Usuario:** 1234567890 (Dr. Carlos Mendoza)
-- **Contraseña:** password123
-- **Permisos:** Ver citas asignadas, confirmar citas, completar citas, agregar notas
+- Ver sus citas asignadas
+- Ver detalles de pacientes
+- Marcar citas como completadas
 
 ### Administrador
-- **Usuario:** admin
-- **Contraseña:** admin123
-- **Permisos:** Gestión completa de usuarios, terapias y sistema
+- Gestionar usuarios (crear, editar, eliminar, cambiar roles)
+- Gestionar terapias (crear, editar, activar/desactivar)
+- Ver todas las citas del sistema
 
-## 🎯 Flujo de Usuario (Paciente)
+## ⚠️ Limitaciones Actuales (Mocks)
 
-1. **Login/Registro**
-   - Iniciar sesión con cédula y contraseña
-   - O registrarse como nuevo paciente (seleccionar tipo de seguro)
+- Los datos se generan con mocks y no persisten
+- La validación de >24 horas funciona en lógica pero puede tener problemas de caché en UI
+- Los horarios disponibles se generan aleatoriamente
+- Las imágenes son placeholders
 
-2. **Dashboard**
-   - Ver próximas citas
-   - Estadísticas rápidas
-   - Accesos directos
+## 🚧 Pendiente para Backend
 
-3. **Reservar Cita**
-   - **Paso 1:** Seleccionar terapia
-   - **Paso 2:** Elegir fecha y hora en calendario
-   - **Paso 3:** Completar formulario médico (síntomas, exámenes)
-   - **Paso 4:** Confirmar y crear cita
-   - **Validaciones:** Anticipación mínima 12 horas, sin doble reserva
+1. ✅ Implementar API REST con Express
+2. ✅ Crear base de datos (PostgreSQL/MySQL)
+3. ✅ Implementar autenticación JWT
+4. ✅ Implementar validaciones en servidor
+5. ✅ Implementar subida de archivos
+6. ✅ Implementar notificaciones por email/SMS
 
-4. **Gestionar Citas**
-   - Ver todas las citas (próximas, completadas, canceladas)
-   - Cancelar citas pendientes (con 24 horas de anticipación)
-   - Ver detalles de cada cita
-
-5. **Perfil**
-   - Ver información personal
-   - Actualizar datos de contacto
-
-## 🩺 Flujo de Usuario (Médico)
-
-1. **Login**
-   - Iniciar sesión con cédula y contraseña
-
-2. **Dashboard**
-   - Ver estadísticas de citas
-   - Accesos rápidos
-
-3. **Gestionar Citas**
-   - Ver citas del día
-   - Ver próximas citas
-   - Confirmar citas pendientes
-   - Completar citas
-   - Agregar notas a las consultas
-   - Ver información de pacientes
-
-## 🔧 Flujo de Usuario (Admin)
-
-1. **Login**
-   - Iniciar sesión con usuario admin
-
-2. **Gestión de Usuarios**
-   - Ver lista completa de usuarios
-   - Buscar y filtrar usuarios
-   - Agregar nuevos usuarios (médicos, admins)
-   - Editar información de usuarios
-   - Eliminar usuarios
-
-3. **Gestión de Terapias**
-   - Ver catálogo de terapias
-   - Crear nuevas terapias
-   - Editar terapias existentes
-   - Activar/desactivar terapias
-   - Eliminar terapias
-
-## 🎨 Sistema de Diseño
-
-### Paleta de Colores
-- **Primary:** #2196F3 (Azul médico profesional)
-- **Secondary:** #00897B (Verde salud)
-- **Estados de Citas:**
-  - Pendiente: #FFA726 (Naranja)
-  - Confirmada: #66BB6A (Verde)
-  - Completada: #42A5F5 (Azul)
-  - Cancelada: #EF5350 (Rojo)
-
-### Componentes Principales
-- **Cards:** Diseño elevado con sombras suaves
-- **Botones:** Bordes redondeados, sin mayúsculas
-- **Formularios:** Validación con Zod y React Hook Form
-- **Notificaciones:** SweetAlert2 para mensajes importantes
-
-## 📱 Responsive Design
-
-El sistema está completamente adaptado para:
-- 📱 **Móviles** (xs: 0-599px)
-- 📱 **Tablets** (sm: 600-899px)
-- 💻 **Desktop** (md: 900px+)
-
-## 🔐 Autenticación y Seguridad
-
-- **JWT Tokens** almacenados en sessionStorage
-- **ProtectedRoute** para rutas privadas
-- **RoleGuard** para control de acceso por roles
-- **Interceptores Axios** para agregar tokens automáticamente
-- **Manejo de sesiones expiradas** con redirección automática
-
-## 🗂️ Gestión de Estado
-
-### Redux Toolkit + RTK Query
-- **citasApi:** Gestión de citas (CRUD, horarios disponibles)
-- **terapiasApi:** Catálogo de terapias
-- **medicosApi:** Información de médicos
-
-### Context API
-- **AuthContext:** Autenticación y usuario actual
-
-## 📄 Documentación Backend
-
-Ver `BACKEND_TECHNICAL_SPECIFICATION.md` para especificaciones completas del backend necesario, incluyendo:
-- Modelos de datos
-- Endpoints de la API
-- Autenticación JWT
-- Reglas de negocio
-- Validaciones
-
-## 🔄 Datos Mock
-
-El sistema incluye datos mock completos para desarrollo sin backend:
-- 3 médicos con diferentes especialidades
-- 6 terapias con imágenes
-- Horarios disponibles generados dinámicamente
-- Sistema de autenticación simulado
-
-## 🛠️ Tecnologías y Patrones
-
-### Patrones Implementados
-- **Component-Based Architecture**
-- **Context API** para estado global de autenticación
-- **RTK Query** para cache y sincronización de datos
-- **Lazy Loading** de páginas para mejor performance
-- **Protected Routes** con guards de autenticación y roles
-- **Form Validation** con Zod schemas
-- **Responsive Design** con Material-UI breakpoints
-
-### Mejores Prácticas
-- ✅ TypeScript estricto para type safety
-- ✅ Componentes funcionales con hooks
-- ✅ Separación de concerns (UI, lógica, datos)
-- ✅ Código modular y reutilizable
-- ✅ Manejo centralizado de errores
-- ✅ Validación de formularios robusta
-
-## 📚 Recursos Adicionales
-
-- [Documentación de React](https://react.dev/)
-- [Material-UI](https://mui.com/)
-- [Redux Toolkit](https://redux-toolkit.js.org/)
-- [React Hook Form](https://react-hook-form.com/)
-- [Zod](https://zod.dev/)
-- [Cambios Implementados](./CAMBIOS_IMPLEMENTADOS.md) - Documentación detallada de los últimos cambios
-
-## 🤝 Contribución
-
-Este proyecto fue generado siguiendo las especificaciones técnicas del documento base, adaptado al dominio de gestión médica.
+Ver **[BACKEND_TECHNICAL_SPECIFICATION.md](./BACKEND_TECHNICAL_SPECIFICATION.md)** para especificaciones completas.
 
 ## 📝 Notas Importantes
 
-1. **Datos Mock:** El sistema actualmente usa datos simulados. Para producción, conectar con el backend según `BACKEND_TECHNICAL_SPECIFICATION.md`
+### Estado Actual
+- **Frontend:** ✅ Completo y funcional con datos mock
+- **Backend:** ⏳ Pendiente de implementación
 
-2. **Imágenes de Terapias:** Las URLs de imágenes apuntan a Unsplash. Para producción, usar imágenes propias.
+### Implementaciones Clave
+1. **Flujo de reserva completo:** Terapia → Médico → Calendario → Formulario → Confirmación
+2. **Selección de médico por especialidad:** Los médicos se filtran según la especialidad de la terapia
+3. **Validación de >24 horas:** Implementada en frontend, pendiente optimización en backend
+4. **Sistema de roles:** Paciente, Médico y Administrador con permisos diferenciados
 
-3. **Validaciones:** Todas las validaciones están implementadas en el frontend. El backend debe implementar las mismas validaciones.
-
-4. **Roles:** El sistema soporta 3 roles (paciente, médico, admin). Cada rol tiene permisos específicos y acceso a diferentes páginas.
-
-5. **Reglas de Negocio:**
-   - Las citas deben reservarse con al menos 12 horas de anticipación
-   - Un usuario no puede tener dos citas en la misma fecha y hora
-   - Las citas solo pueden cancelarse con 24 horas de anticipación
-
-6. **Tipos de Seguro:** El sistema maneja 7 tipos de seguro: ninguno, IESS, Ejército, Policía, ISSFA, ISSPOL, y Privado
-
-7. **Documentación:** Ver `CAMBIOS_IMPLEMENTADOS.md` para detalles completos de los últimos cambios y endpoints necesarios
-
-## 🎓 Frase Inspiradora
-
-> "Lo importante no es poder, lo importante es intentar"
+### Para Producción
+- Conectar con backend según especificaciones en `BACKEND_TECHNICAL_SPECIFICATION.md`
+- Reemplazar imágenes placeholder con imágenes propias
+- Implementar todas las validaciones en el servidor
+- Configurar variables de entorno de producción
 
 ---
+
+**Versión:** 2.0  
+**Última actualización:** Mayo 2026  
+**Estado:** Frontend completo, Backend pendiente
 
 **Desarrollado con ❤️ siguiendo arquitectura profesional y mejores prácticas**

@@ -64,8 +64,8 @@ export default function CalendarPage() {
     { skip: !terapia || !medico }
   );
   
-  // Filtrar horarios solo del médico seleccionado
-  const horarios = horariosRaw.filter(h => h.medicoId === medico?.id);
+  // Filtrar horarios solo del médico seleccionado Y que estén disponibles
+  const horarios = horariosRaw.filter(h => h.medicoId === medico?.id && h.disponible);
 
   const handleContinue = () => {
     if (!selectedDate || !selectedHora || !medico) {
