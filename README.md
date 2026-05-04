@@ -114,6 +114,15 @@ npm run build
 npm run preview
 ```
 
+### Deploy en Vercel
+
+Ver **[DEPLOY_VERCEL.md](./DEPLOY_VERCEL.md)** para instrucciones completas de deploy.
+
+**Resumen rápido:**
+1. Configura Root Directory como `Flova_front` en Vercel
+2. Agrega variable de entorno `VITE_API_BASE_URL` con la URL de tu backend
+3. Deploy automático desde GitHub o usando Vercel CLI
+
 ## 📚 Documentación
 
 ### Documentos Principales
@@ -224,5 +233,7 @@ Ver **[BACKEND_TECHNICAL_SPECIFICATION.md](./BACKEND_TECHNICAL_SPECIFICATION.md)
 **Versión:** 2.0  
 **Última actualización:** Mayo 2026  
 **Estado:** Frontend completo, Backend pendiente
+ 
+ 
 
 **Desarrollado con ❤️ siguiendo arquitectura profesional y mejores prácticas**
