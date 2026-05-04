@@ -6,7 +6,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Configuración base de la API
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
 // Clave para almacenar el token JWT
 export const AUTH_TOKEN_KEY = 'auth_token';

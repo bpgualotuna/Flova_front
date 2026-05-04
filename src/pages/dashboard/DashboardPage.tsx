@@ -48,11 +48,19 @@ export default function DashboardPage() {
   
   // Obtener datos solo si es paciente
   const { data: proximasCitas = [], isLoading: loadingCitas } = useGetProximasCitasQuery(
-    user?.id || 0,
+    undefined,
     { skip: user?.role !== 'paciente' }
   );
   
   const { data: terapias = [] } = useGetTerapiasQuery();
+
+  // Debug: Verificar el usuario y el rol
+  console.log('Dashboard - Usuario:', user);
+  console.log('Dashboard - Rol:', user?.role);
+  console.log('Dashboard - Es paciente?:', user?.role === 'paciente');
+  console.log('Dashboard - Skip query?:', user?.role !== 'paciente');
+  console.log('Dashboard - Próximas citas:', proximasCitas);
+  console.log('Dashboard - Loading citas:', loadingCitas);
 
   const handleOpenModal = (cita: Cita) => {
     setSelectedCita(cita);

@@ -29,7 +29,7 @@ import Swal from 'sweetalert2';
 export default function MyCitasPage() {
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
-  const { data: citas = [], isLoading } = useGetCitasPacienteQuery(user?.id || 0);
+  const { data: citas = [], isLoading } = useGetCitasPacienteQuery();
   const [cancelarCita] = useCancelarCitaMutation();
 
   const handleCancelar = async (citaId: number | string) => {

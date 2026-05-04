@@ -48,10 +48,8 @@ export default function ConfirmationPage() {
     }
 
     try {
-      const result = await createCita({
-        pacienteId: user.id,
-        data: appointmentData,
-      }).unwrap();
+      // El backend obtiene el pacienteId del token JWT automáticamente
+      const result = await createCita(appointmentData).unwrap();
 
       // Limpiar sessionStorage
       sessionStorage.removeItem('selectedTerapia');

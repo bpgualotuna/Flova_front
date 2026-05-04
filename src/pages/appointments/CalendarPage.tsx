@@ -58,14 +58,14 @@ export default function CalendarPage() {
 
   const dates = generateDates();
   
-  // Obtener horarios disponibles filtrados por médico seleccionado
+  // Obtener horarios disponibles del médico seleccionado
   const { data: horariosRaw = [], isLoading } = useGetHorariosDisponiblesQuery(
-    { terapiaId: terapia?.id || 0, fecha: selectedDate || dates[0] },
+    { medicoId: medico?.id || 0, fecha: selectedDate || dates[0] },
     { skip: !terapia || !medico }
   );
   
-  // Filtrar horarios solo del médico seleccionado Y que estén disponibles
-  const horarios = horariosRaw.filter(h => h.medicoId === medico?.id && h.disponible);
+  // Filtrar solo horarios disponibles
+  const horarios = horariosRaw.filter(h => h.disponible);
 
   const handleContinue = () => {
     if (!selectedDate || !selectedHora || !medico) {

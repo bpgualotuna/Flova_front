@@ -1,178 +1,171 @@
 /**
- * Servicio de Autenticación Mock
- * Simula llamadas al backend para login y registro
+ * Servicio de Autenticación
+ * Conectado al backend real
  */
 
+import axiosClient, { AUTH_TOKEN_KEY } from '../app/axiosClient';
 import { LoginCredentials, RegisterData, LoginResult, User } from '../types';
-import { mockUsuarios, mockPasswords } from './mocks/usuariosMock';
-import { AUTH_TOKEN_KEY } from '../app/axiosClient';
-
-// Simular delay de red
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Generar token JWT mock
-const generateMockToken = (user: User): string => {
-  const payload = {
-    id: user.id,
-    cedula: user.cedula,
-    role: user.role,
-    exp: Date.now() + 24 * 60 * 60 * 1000, // 24 horas
-  };
-  
-  return btoa(JSON.stringify(payload));
-};
-
-// Validar token JWT mock
-const validateMockToken = (token: string): User | null => {
-  try {
-    const payload = JSON.parse(atob(token));
-    
-    // Verificar expiración
-    if (payload.exp < Date.now()) {
-      return null;
-    }
-    
-    // Buscar usuario
-    const user = mockUsuarios.find(u => u.id === payload.id);
-    return user || null;
-  } catch {
-    return null;
-  }
-};
 
 /**
  * Login de usuario
  */
 export const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
-  await delay(800);
-  
-  const { cedula, password } = credentials;
-  
-  // Buscar usuario por cédula
-  const user = mockUsuarios.find(u => u.cedula === cedula);
-  
-  if (!user) {
+  try {
+    const response = await axiosClient.post('/auth/login', credentials);
+    
+    const { token, user, message } = response.data;
+    
+    // Guardar token en sessionStorage
+    if (token) {
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+    
+    return {
+      success: true,
+      user,
+      token,
+      message: message || 'Inicio de sesión exitoso',
+    };
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al iniciar sesión';
+    
     return {
       success: false,
-      message: 'Usuario no encontrado. Verifica tu número de cédula.',
+      message: errorMessage,
     };
   }
-  
-  // Verificar contraseña
-  const storedPassword = mockPasswords[cedula];
-  if (storedPassword !== password) {
-    return {
-      success: false,
-      message: 'Contraseña incorrecta.',
-    };
-  }
-  
-  // Generar token
-  const token = generateMockToken(user);
-  
-  // Guardar token en sessionStorage
-  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-  
-  return {
-    success: true,
-    user,
-    token,
-    message: 'Inicio de sesión exitoso',
-  };
 };
 
 /**
  * Registro de nuevo usuario (solo pacientes)
  */
 export const register = async (data: RegisterData): Promise<LoginResult> => {
-  await delay(1000);
-  
-  const { cedula, nombresCompletos, password, direccion, edad, sexo, tipoSeguro, telefono, email } = data;
-  
-  // Verificar si el usuario ya existe
-  const existingUser = mockUsuarios.find(u => u.cedula === cedula);
-  if (existingUser) {
+  try {
+    // Adaptar datos del frontend al formato del backend
+    const backendData = {
+      cedula: data.cedula,
+      fullName: data.nombresCompletos,
+      email: data.email,
+      telefono: data.telefono,
+      tipoSeguro: data.tipoSeguro,
+      password: data.password,
+    };
+    
+    const response = await axiosClient.post('/auth/register', backendData);
+    
+    const { user, message } = response.data;
+    
+    // Después del registro, hacer login automático
+    const loginResult = await login({
+      cedula: data.cedula,
+      password: data.password,
+    });
+    
+    return {
+      success: true,
+      user: loginResult.user,
+      token: loginResult.token,
+      message: message || 'Registro exitoso. Bienvenido al sistema.',
+    };
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al registrar usuario';
+    
     return {
       success: false,
-      message: 'Ya existe un usuario registrado con esta cédula.',
+      message: errorMessage,
     };
   }
-  
-  // Crear nuevo usuario
-  const newUser: User = {
-    id: Date.now(),
-    cedula,
-    username: cedula,
-    fullName: nombresCompletos,
-    role: 'paciente',
-    direccion,
-    edad,
-    sexo,
-    tieneSeguro: tipoSeguro !== 'ninguno', // Mantener compatibilidad
-    tipoSeguro,
-    telefono,
-    email,
-    createdAt: new Date().toISOString(),
-  };
-  
-  // Agregar a la lista de usuarios mock
-  mockUsuarios.push(newUser);
-  mockPasswords[cedula] = password;
-  
-  // Generar token
-  const token = generateMockToken(newUser);
-  
-  // Guardar token en sessionStorage
-  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-  
-  return {
-    success: true,
-    user: newUser,
-    token,
-    message: 'Registro exitoso. Bienvenido al sistema.',
-  };
 };
 
 /**
  * Obtener información del usuario actual
  */
 export const getCurrentUser = async (): Promise<User | null> => {
-  await delay(300);
-  
-  const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-  if (!token) {
+  try {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      return null;
+    }
+    
+    const response = await axiosClient.get('/auth/me');
+    
+    // Adaptar respuesta del backend al formato del frontend
+    const backendUser = response.data;
+    const user: User = {
+      id: backendUser.id,
+      cedula: backendUser.cedula,
+      username: backendUser.username || backendUser.cedula,
+      fullName: backendUser.fullName,
+      email: backendUser.email,
+      telefono: backendUser.telefono,
+      role: backendUser.role,
+      tipoSeguro: backendUser.tipoSeguro,
+      tieneSeguro: backendUser.tipoSeguro !== 'ninguno',
+      createdAt: backendUser.createdAt,
+      updatedAt: backendUser.updatedAt,
+      
+      // Campos de médico si aplica
+      especialidad: backendUser.medico?.especialidad,
+      numeroLicencia: backendUser.medico?.numeroLicencia,
+    };
+    
+    return user;
+  } catch (error) {
+    console.error('Error al obtener usuario actual:', error);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
     return null;
   }
-  
-  return validateMockToken(token);
 };
 
 /**
  * Cerrar sesión
  */
-export const logout = (): void => {
-  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+export const logout = async (): Promise<void> => {
+  try {
+    // Llamar al endpoint de logout del backend
+    await axiosClient.post('/auth/logout');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  } finally {
+    // Siempre eliminar el token del almacenamiento local
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  }
 };
 
 /**
  * Actualizar perfil de usuario
  */
 export const updateProfile = async (userId: number | string, updates: Partial<User>): Promise<User | null> => {
-  await delay(500);
-  
-  const userIndex = mockUsuarios.findIndex(u => u.id === userId);
-  if (userIndex === -1) {
+  try {
+    // Adaptar datos del frontend al formato del backend
+    const backendUpdates: any = {};
+    
+    if (updates.fullName) backendUpdates.fullName = updates.fullName;
+    if (updates.email) backendUpdates.email = updates.email;
+    if (updates.telefono) backendUpdates.telefono = updates.telefono;
+    if (updates.tipoSeguro) backendUpdates.tipoSeguro = updates.tipoSeguro;
+    
+    const response = await axiosClient.put(`/users/${userId}`, backendUpdates);
+    
+    const backendUser = response.data.user;
+    const user: User = {
+      id: backendUser.id,
+      cedula: backendUser.cedula,
+      username: backendUser.username || backendUser.cedula,
+      fullName: backendUser.fullName,
+      email: backendUser.email,
+      telefono: backendUser.telefono,
+      role: backendUser.role,
+      tipoSeguro: backendUser.tipoSeguro,
+      tieneSeguro: backendUser.tipoSeguro !== 'ninguno',
+      updatedAt: backendUser.updatedAt,
+    };
+    
+    return user;
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
     return null;
   }
-  
-  // Actualizar usuario
-  mockUsuarios[userIndex] = {
-    ...mockUsuarios[userIndex],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-  
-  return mockUsuarios[userIndex];
 };
 
 export default {
