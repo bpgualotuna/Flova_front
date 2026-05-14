@@ -18,6 +18,11 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -28,15 +33,26 @@ import {
   Phone as PhoneIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { mockUsuarios } from '../../services/mocks/usuariosMock';
-import { UserRole } from '../../types';
+import { useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from '../../services/usersApi';
+import { UserRole, User } from '../../types';
+import Swal from 'sweetalert2';
+import { useForm, Controller } from 'react-hook-form';
 
 export default function UsersManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'todos'>('todos');
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Obtener usuarios desde el API
+  const { data: usuarios = [], isLoading } = useGetUsersQuery();
+  const [updateUser] = useUpdateUserMutation();
+  const [deleteUser] = useDeleteUserMutation();
+
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm();
 
   // Filtrar usuarios
-  const usuariosFiltrados = mockUsuarios.filter((user) => {
+  const usuariosFiltrados = usuarios.filter((user) => {
     const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.cedula.includes(searchTerm) ||
@@ -70,6 +86,68 @@ export default function UsersManagementPage() {
         return 'Paciente';
       default:
         return role;
+    }
+  };
+
+  const handleOpenEditDialog = (user: User) => {
+    setEditingUser(user);
+    reset({
+      fullName: user.fullName,
+      email: user.email,
+      telefono: user.telefono,
+      tipoSeguro: user.tipoSeguro,
+      role: user.role,
+    });
+    setOpenEditDialog(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setOpenEditDialog(false);
+    setEditingUser(null);
+    reset();
+  };
+
+  const onSubmitEdit = async (data: any) => {
+    if (!editingUser) return;
+
+    try {
+      await updateUser({
+        id: editingUser.id,
+        data: {
+          fullName: data.fullName,
+          email: data.email,
+          telefono: data.telefono,
+          tipoSeguro: data.tipoSeguro,
+          role: data.role,
+        },
+      }).unwrap();
+      await Swal.fire('Actualizado', 'El usuario ha sido actualizado exitosamente', 'success');
+      handleCloseEditDialog();
+    } catch (error: any) {
+      console.error('Error al actualizar usuario:', error);
+      await Swal.fire('Error', error.data?.error || 'No se pudo actualizar el usuario', 'error');
+    }
+  };
+
+  const handleDelete = async (user: User) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar usuario?',
+      text: `Se eliminará a ${user.fullName}. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d32f2f',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteUser(user.id).unwrap();
+        await Swal.fire('Eliminado', 'El usuario ha sido eliminado', 'success');
+      } catch (error: any) {
+        console.error('Error al eliminar usuario:', error);
+        await Swal.fire('Error', error.data?.error || 'No se pudo eliminar el usuario', 'error');
+      }
     }
   };
 
@@ -138,15 +216,15 @@ export default function UsersManagementPage() {
       width: 120,
       sortable: false,
       filterable: false,
-      renderCell: () => (
+      renderCell: (params) => (
         <Box>
           <Tooltip title="Editar">
-            <IconButton size="small" color="primary">
+            <IconButton size="small" color="primary" onClick={() => handleOpenEditDialog(params.row)}>
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Eliminar">
-            <IconButton size="small" color="error">
+            <IconButton size="small" color="error" onClick={() => handleDelete(params.row)}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -154,6 +232,14 @@ export default function UsersManagementPage() {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -182,7 +268,7 @@ export default function UsersManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="primary.main">
-                {mockUsuarios.length}
+                {usuarios.length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Usuarios
@@ -194,7 +280,7 @@ export default function UsersManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="success.main">
-                {mockUsuarios.filter((u) => u.role === 'paciente').length}
+                {usuarios.filter((u) => u.role === 'paciente').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Pacientes
@@ -206,7 +292,7 @@ export default function UsersManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="primary.main">
-                {mockUsuarios.filter((u) => u.role === 'medico').length}
+                {usuarios.filter((u) => u.role === 'medico').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Médicos
@@ -218,7 +304,7 @@ export default function UsersManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="error.main">
-                {mockUsuarios.filter((u) => u.role === 'admin').length}
+                {usuarios.filter((u) => u.role === 'admin').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Administradores
@@ -287,6 +373,91 @@ export default function UsersManagementPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Dialog para editar usuario */}
+      <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+        <form onSubmit={handleSubmit(onSubmitEdit)}>
+          <DialogTitle>Editar Usuario</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Nombre Completo"
+                  {...register('fullName', { required: 'El nombre es requerido' })}
+                  error={!!errors.fullName}
+                  helperText={errors.fullName?.message as string}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  {...register('email')}
+                  error={!!errors.email}
+                  helperText={errors.email?.message as string}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Teléfono"
+                  {...register('telefono')}
+                  error={!!errors.telefono}
+                  helperText={errors.telefono?.message as string}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="tipoSeguro"
+                  control={control}
+                  defaultValue="ninguno"
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      label="Tipo de Seguro"
+                      {...field}
+                    >
+                      <MenuItem value="ninguno">Ninguno</MenuItem>
+                      <MenuItem value="iess">IESS</MenuItem>
+                      <MenuItem value="issfa">ISSFA</MenuItem>
+                      <MenuItem value="isspol">ISSPOL</MenuItem>
+                      <MenuItem value="privado">Privado</MenuItem>
+                    </TextField>
+                  )}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="role"
+                  control={control}
+                  defaultValue="paciente"
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      label="Rol"
+                      {...field}
+                    >
+                      <MenuItem value="paciente">Paciente</MenuItem>
+                      <MenuItem value="medico">Médico</MenuItem>
+                      <MenuItem value="admin">Administrador</MenuItem>
+                    </TextField>
+                  )}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEditDialog}>Cancelar</Button>
+            <Button type="submit" variant="contained">
+              Actualizar
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
 }

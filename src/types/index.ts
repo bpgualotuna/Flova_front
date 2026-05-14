@@ -7,37 +7,40 @@
 // TIPOS DE USUARIO Y AUTENTICACIÓN
 // ============================================
 
-export type UserRole = 'paciente' | 'medico' | 'admin';
+export type UserRole = "paciente" | "medico" | "admin";
 
-export type TipoSeguro = 
-  | 'ninguno'
-  | 'iess'
-  | 'ejercito'
-  | 'policia'
-  | 'privado'
-  | 'issfa'
-  | 'isspol';
+export type TipoSeguro =
+  | "ninguno"
+  | "iess"
+  | "ejercito"
+  | "policia"
+  | "privado"
+  | "issfa"
+  | "isspol";
 
 export interface User {
   id: number | string;
-  cedula: string;           // Usuario = cédula
-  username: string;         // Igual a cédula
+  cedula: string; // Usuario = cédula
+  username: string; // Igual a cédula
   email?: string;
-  fullName: string;         // Nombres completos
+  fullName: string; // Nombres completos
   role: UserRole;
   direccion?: string;
   edad?: number;
-  sexo?: 'masculino' | 'femenino' | 'otro';
-  tieneSeguro: boolean;     // DEPRECATED: usar tipoSeguro
-  tipoSeguro: TipoSeguro;   // Tipo de seguro del usuario
+  sexo?: "masculino" | "femenino" | "otro";
+  tieneSeguro: boolean; // DEPRECATED: usar tipoSeguro
+  tipoSeguro: TipoSeguro; // Tipo de seguro del usuario
   telefono?: string;
   avatar?: string;
   fotoPerfil?: string | null;
-  
+
+  // Solo para operaciones de actualización (nunca se devuelve del backend)
+  password?: string;
+
   // Campos específicos para médicos
   especialidad?: string;
   numeroLicencia?: string;
-  
+
   // Campos de auditoría
   createdAt?: string;
   updatedAt?: string;
@@ -54,7 +57,7 @@ export interface RegisterData {
   password: string;
   direccion: string;
   edad: number;
-  sexo: 'masculino' | 'femenino' | 'otro';
+  sexo: "masculino" | "femenino" | "otro";
   tipoSeguro: TipoSeguro;
   telefono?: string;
   email?: string;
@@ -75,12 +78,12 @@ export interface Terapia {
   id: number | string;
   nombre: string;
   descripcion: string;
-  duracion: number;          // Duración en minutos
+  duracion: number; // Duración en minutos
   precio: number;
   imagen?: string;
   especialidad: string;
   activa: boolean;
-  
+
   // Campos de auditoría
   createdAt?: string;
   updatedAt?: string;
@@ -90,33 +93,37 @@ export interface Terapia {
 // TIPOS DE CITAS
 // ============================================
 
-export type EstadoCita = 'pendiente' | 'confirmada' | 'completada' | 'cancelada';
+export type EstadoCita =
+  | "pendiente"
+  | "confirmada"
+  | "completada"
+  | "cancelada";
 
 export interface Cita {
   id: number | string;
   pacienteId: number | string;
   medicoId: number | string;
   terapiaId: number | string;
-  
+
   // Información de la cita
-  fecha: string;             // ISO date string
-  hora: string;              // HH:mm format
+  fecha: string; // ISO date string
+  hora: string; // HH:mm format
   estado: EstadoCita;
-  
+
   // Información del formulario
   sintomas: string;
   tieneExamenes: boolean;
   examenes?: ArchivoExamen[];
-  
+
   // Información adicional
   notas?: string;
   motivoCancelacion?: string;
-  
+
   // Relaciones (para poblar)
   paciente?: User;
   medico?: User;
   terapia?: Terapia;
-  
+
   // Campos de auditoría
   createdAt?: string;
   updatedAt?: string;
@@ -132,8 +139,8 @@ export interface ArchivoExamen {
 }
 
 export interface HorarioDisponible {
-  fecha: string;             // ISO date string
-  hora: string;              // HH:mm format
+  fecha: string; // ISO date string
+  hora: string; // HH:mm format
   disponible: boolean;
   medicoId: number | string;
   medicoNombre?: string;
@@ -148,12 +155,12 @@ export interface AppointmentFormData {
   fecha: string;
   hora: string;
   medicoId: number | string;
-  
+
   // Paso 2: Formulario
   sintomas: string;
   tieneExamenes: boolean;
   examenes?: File[];
-  
+
   // Paso 3: Confirmación (datos calculados)
   terapiaId: number | string;
 }
@@ -183,7 +190,7 @@ export interface ProximaCita {
 // ============================================
 
 export interface Medico extends User {
-  role: 'medico';
+  role: "medico";
   especialidad: string;
   numeroLicencia: string;
   horarioAtencion?: HorarioAtencion[];
@@ -192,9 +199,9 @@ export interface Medico extends User {
 }
 
 export interface HorarioAtencion {
-  diaSemana: number;         // 0 = Domingo, 6 = Sábado
-  horaInicio: string;        // HH:mm format
-  horaFin: string;           // HH:mm format
+  diaSemana: number; // 0 = Domingo, 6 = Sábado
+  horaInicio: string; // HH:mm format
+  horaFin: string; // HH:mm format
 }
 
 // ============================================
@@ -228,7 +235,7 @@ export interface AuthContextType {
   register: (data: RegisterData) => Promise<LoginResult>;
   logout: () => void;
   refreshUser: () => Promise<void>;
-  
+
   // Helpers de roles
   esAdmin: boolean;
   esPaciente: boolean;
@@ -252,7 +259,7 @@ export interface RouteConfig {
 
 export interface Notificacion {
   id: string;
-  tipo: 'info' | 'success' | 'warning' | 'error';
+  tipo: "info" | "success" | "warning" | "error";
   titulo: string;
   mensaje: string;
   leida: boolean;

@@ -17,6 +17,7 @@ import {
   Alert,
   Avatar,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   CalendarMonth as CalendarIcon,
@@ -25,24 +26,17 @@ import {
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockCitas } from '../../services/mocks/citasMock';
-import { mockUsuarios } from '../../services/mocks/usuariosMock';
-import { mockTerapias } from '../../services/mocks/terapiasMock';
+import { useGetCitasPacienteQuery, useUpdateCitaMutation } from '../../services/citasApi';
 import { Cita } from '../../types';
 import Swal from 'sweetalert2';
 
 export default function MedicoCitasPage() {
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
-
-  // Obtener citas del médico
-  const citasMedico = mockCitas
-    .filter((cita) => cita.medicoId === user?.id)
-    .map((cita) => ({
-      ...cita,
-      paciente: mockUsuarios.find((u) => u.id === cita.pacienteId),
-      terapia: mockTerapias.find((t) => t.id === cita.terapiaId),
-    }));
+  
+  // Obtener citas del médico desde el API
+  const { data: citas = [], isLoading } = useGetCitasPacienteQuery();
+  const [updateCita] = useUpdateCitaMutation();
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -60,7 +54,7 @@ export default function MedicoCitasPage() {
   };
 
   // Filtrar citas según tab
-  const citasFiltradas = citasMedico.filter((cita) => {
+  const citasFiltradas = citas.filter((cita) => {
     const fechaCita = new Date(cita.fecha);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -95,11 +89,16 @@ export default function MedicoCitasPage() {
     });
 
     if (result.isConfirmed) {
-      const index = mockCitas.findIndex((c) => c.id === cita.id);
-      if (index !== -1) {
-        mockCitas[index].estado = 'confirmada';
+      try {
+        await updateCita({ 
+          citaId: cita.id, 
+          estado: 'confirmada' 
+        }).unwrap();
+        await Swal.fire('Confirmada', 'La cita ha sido confirmada', 'success');
+      } catch (error) {
+        console.error('Error al confirmar cita:', error);
+        await Swal.fire('Error', 'No se pudo confirmar la cita', 'error');
       }
-      await Swal.fire('Confirmada', 'La cita ha sido confirmada', 'success');
     }
   };
 
@@ -115,27 +114,40 @@ export default function MedicoCitasPage() {
     });
 
     if (notas !== undefined) {
-      const index = mockCitas.findIndex((c) => c.id === cita.id);
-      if (index !== -1) {
-        mockCitas[index].estado = 'completada';
-        mockCitas[index].notas = notas;
+      try {
+        await updateCita({ 
+          citaId: cita.id, 
+          estado: 'completada',
+          notasMedico: notas 
+        }).unwrap();
+        await Swal.fire('Completada', 'La cita ha sido marcada como completada', 'success');
+      } catch (error) {
+        console.error('Error al completar cita:', error);
+        await Swal.fire('Error', 'No se pudo completar la cita', 'error');
       }
-      await Swal.fire('Completada', 'La cita ha sido marcada como completada', 'success');
     }
   };
 
   // Estadísticas
-  const citasHoy = citasMedico.filter((c) => {
+  const citasHoy = citas.filter((c) => {
     const fechaCita = new Date(c.fecha);
     const hoy = new Date();
     return fechaCita.toDateString() === hoy.toDateString() && c.estado !== 'cancelada';
   }).length;
 
-  const citasPendientes = citasMedico.filter(
+  const citasPendientes = citas.filter(
     (c) => c.estado === 'pendiente' || c.estado === 'confirmada'
   ).length;
 
-  const citasCompletadas = citasMedico.filter((c) => c.estado === 'completada').length;
+  const citasCompletadas = citas.filter((c) => c.estado === 'completada').length;
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>

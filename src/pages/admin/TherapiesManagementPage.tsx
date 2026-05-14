@@ -21,6 +21,7 @@ import {
   DialogActions,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,7 +34,12 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { mockTerapias } from '../../services/mocks/terapiasMock';
+import { 
+  useGetTerapiasQuery, 
+  useCreateTerapiaMutation, 
+  useUpdateTerapiaMutation, 
+  useDeleteTerapiaMutation 
+} from '../../services/terapiasApi';
 import { Terapia } from '../../types';
 import Swal from 'sweetalert2';
 
@@ -54,6 +60,12 @@ export default function TherapiesManagementPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingTerapia, setEditingTerapia] = useState<Terapia | null>(null);
 
+  // Obtener terapias desde el API
+  const { data: terapias = [], isLoading } = useGetTerapiasQuery();
+  const [createTerapia] = useCreateTerapiaMutation();
+  const [updateTerapia] = useUpdateTerapiaMutation();
+  const [deleteTerapia] = useDeleteTerapiaMutation();
+
   const {
     register,
     handleSubmit,
@@ -65,7 +77,7 @@ export default function TherapiesManagementPage() {
   });
 
   // Filtrar terapias
-  const terapiasFiltradas = mockTerapias.filter((terapia) =>
+  const terapiasFiltradas = terapias.filter((terapia) =>
     terapia.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     terapia.especialidad.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -105,29 +117,20 @@ export default function TherapiesManagementPage() {
     try {
       if (editingTerapia) {
         // Actualizar terapia existente
-        const index = mockTerapias.findIndex((t) => t.id === editingTerapia.id);
-        if (index !== -1) {
-          mockTerapias[index] = {
-            ...mockTerapias[index],
-            ...data,
-            updatedAt: new Date().toISOString(),
-          };
-        }
+        await updateTerapia({ 
+          id: editingTerapia.id, 
+          data 
+        }).unwrap();
         await Swal.fire('Actualizada', 'La terapia ha sido actualizada exitosamente', 'success');
       } else {
         // Crear nueva terapia
-        const nuevaTerapia: Terapia = {
-          id: Date.now(),
-          ...data,
-          activa: true,
-          createdAt: new Date().toISOString(),
-        };
-        mockTerapias.push(nuevaTerapia);
+        await createTerapia(data).unwrap();
         await Swal.fire('Creada', 'La terapia ha sido creada exitosamente', 'success');
       }
       handleCloseDialog();
-    } catch (error) {
-      await Swal.fire('Error', 'No se pudo guardar la terapia', 'error');
+    } catch (error: any) {
+      console.error('Error al guardar terapia:', error);
+      await Swal.fire('Error', error.data?.error || 'No se pudo guardar la terapia', 'error');
     }
   };
 
@@ -144,15 +147,20 @@ export default function TherapiesManagementPage() {
     });
 
     if (result.isConfirmed) {
-      const index = mockTerapias.findIndex((t) => t.id === terapia.id);
-      if (index !== -1) {
-        mockTerapias[index].activa = !mockTerapias[index].activa;
+      try {
+        await updateTerapia({ 
+          id: terapia.id, 
+          data: { activa: !terapia.activa } 
+        }).unwrap();
+        await Swal.fire(
+          'Actualizada',
+          `La terapia ha sido ${terapia.activa ? 'desactivada' : 'activada'}`,
+          'success'
+        );
+      } catch (error: any) {
+        console.error('Error al actualizar terapia:', error);
+        await Swal.fire('Error', error.data?.error || 'No se pudo actualizar la terapia', 'error');
       }
-      await Swal.fire(
-        'Actualizada',
-        `La terapia ha sido ${terapia.activa ? 'desactivada' : 'activada'}`,
-        'success'
-      );
     }
   };
 
@@ -168,13 +176,23 @@ export default function TherapiesManagementPage() {
     });
 
     if (result.isConfirmed) {
-      const index = mockTerapias.findIndex((t) => t.id === terapia.id);
-      if (index !== -1) {
-        mockTerapias.splice(index, 1);
+      try {
+        await deleteTerapia(terapia.id).unwrap();
+        await Swal.fire('Eliminada', 'La terapia ha sido eliminada', 'success');
+      } catch (error: any) {
+        console.error('Error al eliminar terapia:', error);
+        await Swal.fire('Error', error.data?.error || 'No se pudo eliminar la terapia', 'error');
       }
-      await Swal.fire('Eliminada', 'La terapia ha sido eliminada', 'success');
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -204,7 +222,7 @@ export default function TherapiesManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="primary.main">
-                {mockTerapias.length}
+                {terapias.length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Terapias
@@ -216,7 +234,7 @@ export default function TherapiesManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="success.main">
-                {mockTerapias.filter((t) => t.activa).length}
+                {terapias.filter((t) => t.activa).length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Activas
@@ -228,7 +246,7 @@ export default function TherapiesManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="error.main">
-                {mockTerapias.filter((t) => !t.activa).length}
+                {terapias.filter((t) => !t.activa).length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Inactivas
@@ -240,7 +258,7 @@ export default function TherapiesManagementPage() {
           <Card>
             <CardContent>
               <Typography variant="h4" fontWeight="bold" color="info.main">
-                ${(mockTerapias.reduce((sum, t) => sum + t.precio, 0) / mockTerapias.length).toFixed(2)}
+                ${terapias.length > 0 ? (terapias.reduce((sum, t) => sum + t.precio, 0) / terapias.length).toFixed(2) : '0.00'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Precio Promedio
