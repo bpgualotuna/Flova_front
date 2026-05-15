@@ -25,6 +25,7 @@ const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'));
 // Páginas de Admin
 const UsersManagementPage = lazy(() => import('../pages/admin/UsersManagementPage'));
 const TherapiesManagementPage = lazy(() => import('../pages/admin/TherapiesManagementPage'));
+const FinanzasPage = lazy(() => import('../pages/admin/FinanzasPage'));
 
 // Páginas de Médico
 const MedicoCitasPage = lazy(() => import('../pages/medico/MedicoCitasPage'));
@@ -66,6 +67,7 @@ export const ROUTES = {
   // Admin
   ADMIN_USUARIOS: '/admin/usuarios',
   ADMIN_TERAPIAS: '/admin/terapias',
+  ADMIN_FINANZAS: '/admin/finanzas',
   
   // Médico
   MEDICO_CITAS: '/medico/citas',
@@ -189,6 +191,16 @@ export const router = createBrowserRouter([
           <Suspense fallback={<PageLoader />}>
             <RoleGuard allowedRoles={['admin']}>
               <TherapiesManagementPage />
+            </RoleGuard>
+          </Suspense>
+        ),
+      },
+      {
+        path: ROUTES.ADMIN_FINANZAS,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RoleGuard allowedRoles={['admin']}>
+              <FinanzasPage />
             </RoleGuard>
           </Suspense>
         ),

@@ -32,6 +32,7 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
+  AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -78,6 +79,12 @@ const menuItems: MenuItem[] = [
     text: 'Gestión de Terapias',
     icon: <HospitalIcon sx={{ color: '#4CAF50' }} />,
     path: '/admin/terapias',
+    roles: ['admin'],
+  },
+  {
+    text: 'Finanzas',
+    icon: <MoneyIcon sx={{ color: '#FF5722' }} />,
+    path: '/admin/finanzas',
     roles: ['admin'],
   },
   {

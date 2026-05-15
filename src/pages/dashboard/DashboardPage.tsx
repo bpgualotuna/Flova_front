@@ -19,6 +19,14 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
 } from "@mui/material";
 import {
   CalendarMonth as CalendarIcon,
@@ -31,11 +39,16 @@ import {
   Phone as PhoneIcon,
   AccessTime as AccessTimeIcon,
   Description as DescriptionIcon,
+  People as PeopleIcon,
+  AttachMoney as MoneyIcon,
+  TrendingUp as TrendingUpIcon,
+  MedicalServices as MedicalIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useGetProximasCitasQuery } from "../../services/citasApi";
 import { useGetTerapiasQuery } from "../../services/terapiasApi";
+import { useGetAdminStatsQuery } from "../../services/statsApi";
 import { Cita } from "../../types";
 // import { format } from 'date-fns';
 // import { es } from 'date-fns/locale';
@@ -51,6 +64,11 @@ export default function DashboardPage() {
     useGetProximasCitasQuery(undefined, { skip: user?.role !== "paciente" });
 
   const { data: terapias = [] } = useGetTerapiasQuery();
+
+  // Obtener estadísticas de admin
+  const { data: adminStats, isLoading: loadingAdminStats } = useGetAdminStatsQuery(undefined, {
+    skip: user?.role !== 'admin'
+  });
 
   const handleOpenModal = (cita: Cita) => {
     setSelectedCita(cita);
@@ -367,18 +385,304 @@ export default function DashboardPage() {
 
       {/* Vista para admin/médico */}
       {user?.role !== "paciente" && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Panel de {user?.role === "admin" ? "Administración" : "Médico"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Funcionalidades específicas para{" "}
-              {user?.role === "admin" ? "administradores" : "médicos"}
-              se implementarán en futuras versiones.
-            </Typography>
-          </CardContent>
-        </Card>
+        <>
+          {user?.role === "admin" && adminStats && (
+            <>
+              {/* Estadísticas principales para Admin */}
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar sx={{ bgcolor: "rgba(255,255,255,0.3)", width: 56, height: 56 }}>
+                          <PeopleIcon sx={{ color: 'white' }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h4" fontWeight="bold" color="white">
+                            {adminStats.usuarios.total}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                            Usuarios Registrados
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            +{adminStats.usuarios.nuevosUltimos7Dias} últimos 7 días
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar sx={{ bgcolor: "rgba(255,255,255,0.3)", width: 56, height: 56 }}>
+                          <CalendarIcon sx={{ color: 'white' }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h4" fontWeight="bold" color="white">
+                            {adminStats.citas.total}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                            Citas Agendadas
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            {adminStats.citas.pendientes} pendientes
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar sx={{ bgcolor: "rgba(255,255,255,0.3)", width: 56, height: 56 }}>
+                          <MoneyIcon sx={{ color: 'white' }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h4" fontWeight="bold" color="white">
+                            ${adminStats.finanzas.ingresosEsperados.toFixed(2)}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                            Ingresos Esperados
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            ${adminStats.finanzas.ingresosCompletados.toFixed(2)} completados
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card sx={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar sx={{ bgcolor: "rgba(255,255,255,0.3)", width: 56, height: 56 }}>
+                          <MedicalIcon sx={{ color: 'white' }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h4" fontWeight="bold" color="white">
+                            {adminStats.terapias.activas}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                            Terapias Activas
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            de {adminStats.terapias.total} totales
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              {/* Desglose de usuarios */}
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Distribución de Usuarios
+                      </Typography>
+                      <Box sx={{ mt: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonIcon color="primary" />
+                            <Typography variant="body1">Pacientes</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.usuarios.pacientes}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <MedicalIcon color="secondary" />
+                            <Typography variant="body1">Médicos</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.usuarios.medicos}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CheckCircleIcon color="success" />
+                            <Typography variant="body1">Administradores</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.usuarios.admins}</Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Estado de Citas
+                      </Typography>
+                      <Box sx={{ mt: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <ScheduleIcon sx={{ color: '#ff9800' }} />
+                            <Typography variant="body1">Pendientes</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.citas.pendientes}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                            <Typography variant="body1">Confirmadas</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.citas.confirmadas}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 2, bgcolor: '#e3f2fd', borderRadius: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TrendingUpIcon sx={{ color: '#2196f3' }} />
+                            <Typography variant="body1">Completadas</Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">{adminStats.citas.completadas}</Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              {/* Acciones rápidas para admin */}
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Acciones Rápidas
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<PeopleIcon />}
+                        onClick={() => navigate("/admin/usuarios")}
+                        sx={{ py: 1.5 }}
+                      >
+                        Gestionar Usuarios
+                      </Button>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<HospitalIcon />}
+                        onClick={() => navigate("/admin/terapias")}
+                        sx={{ py: 1.5 }}
+                      >
+                        Gestionar Terapias
+                      </Button>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<MoneyIcon />}
+                        onClick={() => navigate("/admin/finanzas")}
+                        sx={{ py: 1.5 }}
+                      >
+                        Ver Finanzas
+                      </Button>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<CalendarIcon />}
+                        onClick={() => navigate("/mis-citas")}
+                        sx={{ py: 1.5 }}
+                      >
+                        Ver Todas las Citas
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Citas recientes */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Citas Recientes
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                          <TableCell><strong>Fecha</strong></TableCell>
+                          <TableCell><strong>Hora</strong></TableCell>
+                          <TableCell><strong>Paciente</strong></TableCell>
+                          <TableCell><strong>Médico</strong></TableCell>
+                          <TableCell><strong>Terapia</strong></TableCell>
+                          <TableCell><strong>Estado</strong></TableCell>
+                          <TableCell align="right"><strong>Precio</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {adminStats.citas.recientes.map((cita) => (
+                          <TableRow key={cita.id} hover>
+                            <TableCell>{new Date(cita.fecha).toLocaleDateString('es-ES')}</TableCell>
+                            <TableCell>{cita.hora}</TableCell>
+                            <TableCell>{cita.paciente}</TableCell>
+                            <TableCell>{cita.medico}</TableCell>
+                            <TableCell>{cita.terapia}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={cita.estado}
+                                color={getEstadoColor(cita.estado)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight="600" color="primary">
+                                ${cita.precio.toFixed(2)}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {user?.role === "medico" && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Panel de Médico
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Gestiona tus citas y pacientes desde aquí
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<CalendarIcon />}
+                  onClick={() => navigate("/medico/citas")}
+                >
+                  Ver Mis Citas
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {loadingAdminStats && user?.role === "admin" && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+        </>
       )}
 
       {/* Modal de Detalles de Cita */}

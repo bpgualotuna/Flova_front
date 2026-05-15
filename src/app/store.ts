@@ -8,6 +8,7 @@ import { citasApi } from "../services/citasApi";
 import { terapiasApi } from "../services/terapiasApi";
 import { medicosApi } from "../services/medicosApi";
 import { usersApi } from "../services/usersApi";
+import { statsApi } from "../services/statsApi";
 
 export const store = configureStore({
   reducer: {
@@ -16,13 +17,15 @@ export const store = configureStore({
     [terapiasApi.reducerPath]: terapiasApi.reducer,
     [medicosApi.reducerPath]: medicosApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
+    [statsApi.reducerPath]: statsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(citasApi.middleware)
       .concat(terapiasApi.middleware)
       .concat(medicosApi.middleware)
-      .concat(usersApi.middleware),
+      .concat(usersApi.middleware)
+      .concat(statsApi.middleware),
 });
 
 export default store;
