@@ -1,10 +1,5 @@
-/**
- * Página de Formulario de Cita
- * Paso 2: Formulario con síntomas y exámenes
- */
-
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -22,26 +17,32 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
-} from '@mui/icons-material';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { ROUTES } from '../../app/router';
+} from "@mui/icons-material";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ROUTES } from "../../app/router";
 
 const formSchema = z.object({
-  sintomas: z.string().min(10, 'Describe tus síntomas (mínimo 10 caracteres)'),
-  tieneExamenes: z.enum(['si', 'no']),
+  sintomas: z.string().min(10, "Describe tus síntomas (mínimo 10 caracteres)"),
+  tieneExamenes: z.enum(["si", "no"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export default function AppointmentFormPage() {
+  // Fix #2: Read and parse sessionStorage once, before any hooks, and reuse below.
+  const storedAppointmentRaw = sessionStorage.getItem("appointmentData");
+  const storedAppointmentData = storedAppointmentRaw
+    ? JSON.parse(storedAppointmentRaw)
+    : null;
+
   const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
 
@@ -53,16 +54,15 @@ export default function AppointmentFormPage() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      tieneExamenes: 'no',
-    },
+    defaultValues: { tieneExamenes: "no" },
   });
 
-  const tieneExamenes = watch('tieneExamenes');
+  const tieneExamenes = watch("tieneExamenes");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setFiles([...files, ...Array.from(event.target.files)]);
+      // Fix #1: Use functional update form to avoid stale closure bugs.
+      setFiles((prev) => [...prev, ...Array.from(event.target.files!)]);
     }
   };
 
@@ -71,26 +71,26 @@ export default function AppointmentFormPage() {
   };
 
   const onSubmit = (data: FormData) => {
-    // Guardar datos del formulario
-    const appointmentData = JSON.parse(sessionStorage.getItem('appointmentData') || '{}');
-    
-    sessionStorage.setItem('appointmentData', JSON.stringify({
-      ...appointmentData,
-      sintomas: data.sintomas,
-      tieneExamenes: data.tieneExamenes === 'si',
-      examenes: files.map(f => f.name),
-    }));
-
+    // Fix #2: Reuse the already-parsed value instead of reading sessionStorage again.
+    sessionStorage.setItem(
+      "appointmentData",
+      JSON.stringify({
+        ...storedAppointmentData,
+        sintomas: data.sintomas,
+        tieneExamenes: data.tieneExamenes === "si",
+        examenes: files.map((f) => f.name),
+      }),
+    );
     navigate(ROUTES.CONFIRMACION);
   };
 
-  // Verificar que existan datos previos
-  const appointmentData = sessionStorage.getItem('appointmentData');
-  if (!appointmentData) {
+  // Guard check — uses the cached value from above.
+  if (!storedAppointmentData) {
     return (
       <Box>
         <Alert severity="error">
-          No se encontraron datos de la cita. Por favor, inicia el proceso desde el principio.
+          No se encontraron datos de la cita. Por favor, inicia el proceso desde
+          el principio.
         </Alert>
         <Button onClick={() => navigate(ROUTES.TERAPIAS)} sx={{ mt: 2 }}>
           Volver a Terapias
@@ -101,7 +101,6 @@ export default function AppointmentFormPage() {
 
   return (
     <Box>
-      {/* Encabezado */}
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -121,36 +120,43 @@ export default function AppointmentFormPage() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
           <CardContent>
-            {/* Síntomas */}
             <TextField
               fullWidth
               label="Describe tus síntomas"
               placeholder="Ej: Dolor en la rodilla derecha al caminar..."
               multiline
               rows={4}
-              {...register('sintomas')}
+              {...register("sintomas")}
               error={!!errors.sintomas}
               helperText={errors.sintomas?.message}
               sx={{ mb: 3 }}
             />
 
-            {/* ¿Tiene exámenes? */}
             <FormControl component="fieldset" sx={{ mb: 3 }}>
-              <FormLabel component="legend">¿Tienes exámenes médicos?</FormLabel>
+              <FormLabel component="legend">
+                ¿Tienes exámenes médicos?
+              </FormLabel>
               <Controller
                 name="tieneExamenes"
                 control={control}
                 render={({ field }) => (
                   <RadioGroup {...field} row>
-                    <FormControlLabel value="si" control={<Radio />} label="Sí" />
-                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                    <FormControlLabel
+                      value="si"
+                      control={<Radio />}
+                      label="Sí"
+                    />
+                    <FormControlLabel
+                      value="no"
+                      control={<Radio />}
+                      label="No"
+                    />
                   </RadioGroup>
                 )}
               />
             </FormControl>
 
-            {/* Upload de archivos */}
-            {tieneExamenes === 'si' && (
+            {tieneExamenes === "si" && (
               <Box>
                 <Button
                   variant="outlined"
@@ -171,10 +177,14 @@ export default function AppointmentFormPage() {
                 {files.length > 0 && (
                   <List>
                     {files.map((file, index) => (
+                      // Fix #3: Use file name + index as key to avoid bugs when the list is reordered.
                       <ListItem
-                        key={index}
+                        key={file.name + "-" + index}
                         secondaryAction={
-                          <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
+                          <IconButton
+                            edge="end"
+                            onClick={() => handleRemoveFile(index)}
+                          >
                             <DeleteIcon />
                           </IconButton>
                         }
@@ -189,12 +199,12 @@ export default function AppointmentFormPage() {
                 )}
 
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Si no los tienes en digital, no olvides llevarlos el día de tu cita
+                  Si no los tienes en digital, no olvides llevarlos el día de tu
+                  cita
                 </Alert>
               </Box>
             )}
 
-            {/* Botón continuar */}
             <Button
               type="submit"
               variant="contained"

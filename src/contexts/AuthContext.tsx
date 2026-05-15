@@ -4,9 +4,15 @@
  * Adaptado para el sistema médico
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, RegisterData, LoginResult, AuthContextType } from '../types';
-import * as authService from '../services/authService';
+import { createContext, use, useState, useEffect, ReactNode } from "react";
+import {
+  User,
+  LoginCredentials,
+  RegisterData,
+  LoginResult,
+  AuthContextType,
+} from "../types";
+import * as authService from "../services/authService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -27,7 +33,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(currentUser);
         }
       } catch (error) {
-        console.error('Error al restaurar sesión:', error);
+        console.error("Error al restaurar sesión:", error);
       } finally {
         setIsLoading(false);
       }
@@ -42,10 +48,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
     };
 
-    window.addEventListener('auth:session-expired', handleSessionExpired);
+    window.addEventListener("auth:session-expired", handleSessionExpired);
 
     return () => {
-      window.removeEventListener('auth:session-expired', handleSessionExpired);
+      window.removeEventListener("auth:session-expired", handleSessionExpired);
     };
   }, []);
 
@@ -55,17 +61,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
     try {
       const result = await authService.login(credentials);
-      
+
       if (result.success && result.user) {
         setUser(result.user);
       }
-      
+
       return result;
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error("Error en login:", error);
       return {
         success: false,
-        message: 'Error al iniciar sesión. Intenta nuevamente.',
+        message: "Error al iniciar sesión. Intenta nuevamente.",
       };
     }
   };
@@ -76,17 +82,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: RegisterData): Promise<LoginResult> => {
     try {
       const result = await authService.register(data);
-      
+
       if (result.success && result.user) {
         setUser(result.user);
       }
-      
+
       return result;
     } catch (error) {
-      console.error('Error en registro:', error);
+      console.error("Error en registro:", error);
       return {
         success: false,
-        message: 'Error al registrar usuario. Intenta nuevamente.',
+        message: "Error al registrar usuario. Intenta nuevamente.",
       };
     }
   };
@@ -111,15 +117,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(null);
       }
     } catch (error) {
-      console.error('Error al refrescar usuario:', error);
+      console.error("Error al refrescar usuario:", error);
       setUser(null);
     }
   };
 
   // Helpers de roles
-  const esAdmin = user?.role === 'admin';
-  const esPaciente = user?.role === 'paciente';
-  const esMedico = user?.role === 'medico';
+  const esAdmin = user?.role === "admin";
+  const esPaciente = user?.role === "paciente";
+  const esMedico = user?.role === "medico";
 
   const value: AuthContextType = {
     user,
@@ -141,12 +147,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
  * Hook para usar el contexto de autenticación
  */
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  
+  const context = use(AuthContext);
+
   if (context === undefined) {
-    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   }
-  
+
   return context;
 }
 

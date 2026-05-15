@@ -166,26 +166,6 @@ export interface AppointmentFormData {
 }
 
 // ============================================
-// TIPOS DE DASHBOARD
-// ============================================
-
-export interface DashboardStats {
-  proximasCitas: number;
-  citasCompletadas: number;
-  citasPendientes: number;
-  terapiasDisponibles: number;
-}
-
-export interface ProximaCita {
-  id: number | string;
-  fecha: string;
-  hora: string;
-  terapiaNombre: string;
-  medicoNombre: string;
-  estado: EstadoCita;
-}
-
-// ============================================
 // TIPOS DE MÉDICOS
 // ============================================
 
@@ -240,34 +220,6 @@ export interface AuthContextType {
   esAdmin: boolean;
   esPaciente: boolean;
   esMedico: boolean;
-}
-
-// ============================================
-// TIPOS DE RUTAS
-// ============================================
-
-export interface RouteConfig {
-  path: string;
-  element: React.ReactNode;
-  roles?: UserRole[];
-  children?: RouteConfig[];
-}
-
-// ============================================
-// TIPOS DE NOTIFICACIONES
-// ============================================
-
-export interface Notificacion {
-  id: string;
-  tipo: "info" | "success" | "warning" | "error";
-  titulo: string;
-  mensaje: string;
-  leida: boolean;
-  fecha: string;
-  accion?: {
-    texto: string;
-    url: string;
-  };
 }
 
 export default {};

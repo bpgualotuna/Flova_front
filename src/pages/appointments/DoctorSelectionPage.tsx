@@ -3,8 +3,8 @@
  * Muestra los médicos disponibles para la terapia seleccionada
  */
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -17,16 +17,15 @@ import {
   Alert,
   CircularProgress,
   Grid,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Person as PersonIcon,
-  Star as StarIcon,
   Schedule as ScheduleIcon,
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckIcon,
-} from '@mui/icons-material';
-import { useGetMedicosByEspecialidadQuery } from '../../services/medicosApi';
-import { Terapia, Medico } from '../../types';
+} from "@mui/icons-material";
+import { useGetMedicosByEspecialidadQuery } from "../../services/medicosApi";
+import { Terapia, Medico } from "../../types";
 
 export default function DoctorSelectionPage() {
   const navigate = useNavigate();
@@ -35,19 +34,19 @@ export default function DoctorSelectionPage() {
 
   // Cargar terapia seleccionada desde sessionStorage
   useEffect(() => {
-    const terapiaStr = sessionStorage.getItem('selectedTerapia');
+    const terapiaStr = sessionStorage.getItem("selectedTerapia:v1");
     if (terapiaStr) {
       setSelectedTerapia(JSON.parse(terapiaStr));
     } else {
       // Si no hay terapia seleccionada, redirigir a terapias
-      navigate('/terapias');
+      navigate("/terapias");
     }
   }, [navigate]);
 
   // Obtener médicos por especialidad
   const { data: medicos = [], isLoading } = useGetMedicosByEspecialidadQuery(
-    selectedTerapia?.especialidad || '',
-    { skip: !selectedTerapia }
+    selectedTerapia?.especialidad || "",
+    { skip: !selectedTerapia },
   );
 
   const handleSelectMedico = (medico: Medico) => {
@@ -57,31 +56,34 @@ export default function DoctorSelectionPage() {
   const handleContinuar = () => {
     if (selectedMedico) {
       // Guardar médico seleccionado en sessionStorage
-      sessionStorage.setItem('selectedMedico', JSON.stringify(selectedMedico));
-      navigate('/calendario');
+      sessionStorage.setItem(
+        "selectedMedico:v1",
+        JSON.stringify(selectedMedico),
+      );
+      navigate("/calendario");
     }
   };
 
   const handleVolver = () => {
-    navigate('/terapias');
+    navigate("/terapias");
   };
 
   const getDiasAtencion = (medico: Medico): string => {
     if (!medico.horarioAtencion || medico.horarioAtencion.length === 0) {
-      return 'No especificado';
+      return "No especificado";
     }
 
-    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     const diasAtencion = medico.horarioAtencion
-      .map(h => dias[h.diaSemana])
-      .join(', ');
-    
+      .map((h) => dias[h.diaSemana])
+      .join(", ");
+
     return diasAtencion;
   };
 
   const getHorarioAtencion = (medico: Medico): string => {
     if (!medico.horarioAtencion || medico.horarioAtencion.length === 0) {
-      return 'No especificado';
+      return "No especificado";
     }
 
     // Tomar el primer horario como referencia
@@ -91,7 +93,14 @@ export default function DoctorSelectionPage() {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <CircularProgress size={60} />
       </Box>
     );
@@ -114,22 +123,31 @@ export default function DoctorSelectionPage() {
           Selecciona un Médico
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Elige el médico especialista para tu terapia de <strong>{selectedTerapia?.nombre}</strong>
+          Elige el médico especialista para tu terapia de{" "}
+          <strong>{selectedTerapia?.nombre}</strong>
         </Typography>
       </Box>
 
       {/* Información de la terapia seleccionada */}
       {selectedTerapia && (
-        <Card sx={{ mb: 4, bgcolor: 'primary.50', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+        <Card
+          sx={{
+            mb: 4,
+            bgcolor: "primary.50",
+            borderLeft: "4px solid",
+            borderColor: "primary.main",
+          }}
+        >
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <CheckIcon color="primary" />
               <Box>
                 <Typography variant="h6" fontWeight="600">
                   {selectedTerapia.nombre}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {selectedTerapia.especialidad} • {selectedTerapia.duracion} min • ${selectedTerapia.precio.toFixed(2)}
+                  {selectedTerapia.especialidad} • {selectedTerapia.duracion}{" "}
+                  min • ${selectedTerapia.precio.toFixed(2)}
                 </Typography>
               </Box>
             </Box>
@@ -150,30 +168,36 @@ export default function DoctorSelectionPage() {
 
           <Grid container spacing={3}>
             {medicos.map((medico) => (
-              <Grid item xs={12} md={6} key={medico.id}>
+              <Grid size={{ xs: 12, md: 6 }} key={medico.id}>
                 <Card
                   sx={{
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    border: '2px solid',
-                    borderColor: selectedMedico?.id === medico.id ? 'primary.main' : 'transparent',
-                    bgcolor: selectedMedico?.id === medico.id ? 'primary.50' : 'background.paper',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    border: "2px solid",
+                    borderColor:
+                      selectedMedico?.id === medico.id
+                        ? "primary.main"
+                        : "transparent",
+                    bgcolor:
+                      selectedMedico?.id === medico.id
+                        ? "primary.50"
+                        : "background.paper",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
                       boxShadow: 4,
                     },
                   }}
                   onClick={() => handleSelectMedico(medico)}
                 >
                   <CardContent>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                       {/* Avatar */}
                       <Avatar
                         sx={{
                           width: 80,
                           height: 80,
-                          bgcolor: 'primary.main',
-                          fontSize: '2rem',
+                          bgcolor: "primary.main",
+                          fontSize: "2rem",
                         }}
                       >
                         {medico.fullName.charAt(0)}
@@ -203,8 +227,17 @@ export default function DoctorSelectionPage() {
                     </Box>
 
                     {/* Calificación y pacientes */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
                         <Rating
                           value={medico.calificacion || 0}
                           precision={0.1}
@@ -218,7 +251,9 @@ export default function DoctorSelectionPage() {
                       <Typography variant="body2" color="text.secondary">
                         •
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
                         <PersonIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="text.secondary">
                           {medico.pacientesAtendidos} pacientes
@@ -227,7 +262,16 @@ export default function DoctorSelectionPage() {
                     </Box>
 
                     {/* Horario de atención */}
-                    <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "start",
+                        gap: 1,
+                        p: 2,
+                        bgcolor: "background.default",
+                        borderRadius: 1,
+                      }}
+                    >
                       <ScheduleIcon fontSize="small" color="action" />
                       <Box>
                         <Typography variant="body2" fontWeight="600">
@@ -248,7 +292,7 @@ export default function DoctorSelectionPage() {
           </Grid>
 
           {/* Botón continuar */}
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
             <Button
               variant="contained"
               size="large"

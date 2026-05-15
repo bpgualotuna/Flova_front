@@ -3,8 +3,8 @@
  * Paso 3: Confirmar y crear la cita
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -16,15 +16,15 @@ import {
   CircularProgress,
   Grid,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   CheckCircle as CheckIcon,
   ArrowBack as ArrowBackIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { useCreateCitaMutation } from '../../services/citasApi';
-import { ROUTES } from '../../app/router';
-import Swal from 'sweetalert2';
+} from "@mui/icons-material";
+import { useAuth } from "../../contexts/AuthContext";
+import { useCreateCitaMutation } from "../../services/citasApi";
+import { ROUTES } from "../../app/router";
+import Swal from "sweetalert2";
 
 export default function ConfirmationPage() {
   const navigate = useNavigate();
@@ -33,40 +33,42 @@ export default function ConfirmationPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Obtener datos guardados
-  const terapiaStr = sessionStorage.getItem('selectedTerapia');
-  const medicoStr = sessionStorage.getItem('selectedMedico');
-  const appointmentDataStr = sessionStorage.getItem('appointmentData');
-  
+  const terapiaStr = sessionStorage.getItem("selectedTerapia:v1");
+  const medicoStr = sessionStorage.getItem("selectedMedico:v1");
+  const appointmentDataStr = sessionStorage.getItem("appointmentData");
+
   const terapia = terapiaStr ? JSON.parse(terapiaStr) : null;
   const medico = medicoStr ? JSON.parse(medicoStr) : null;
-  const appointmentData = appointmentDataStr ? JSON.parse(appointmentDataStr) : null;
+  const appointmentData = appointmentDataStr
+    ? JSON.parse(appointmentDataStr)
+    : null;
 
   const handleConfirm = async () => {
     if (!user || !appointmentData) {
-      setError('Faltan datos para crear la cita');
+      setError("Faltan datos para crear la cita");
       return;
     }
 
     try {
       // El backend obtiene el pacienteId del token JWT automáticamente
-      const result = await createCita(appointmentData).unwrap();
+      await createCita(appointmentData).unwrap();
 
       // Limpiar sessionStorage
-      sessionStorage.removeItem('selectedTerapia');
-      sessionStorage.removeItem('selectedMedico');
-      sessionStorage.removeItem('appointmentData');
+      sessionStorage.removeItem("selectedTerapia:v1");
+      sessionStorage.removeItem("selectedMedico:v1");
+      sessionStorage.removeItem("appointmentData");
 
       // Mostrar mensaje de éxito
       await Swal.fire({
-        icon: 'success',
-        title: '¡Cita Reservada!',
-        text: 'Tu cita ha sido reservada exitosamente',
-        confirmButtonText: 'Ver Mis Citas',
+        icon: "success",
+        title: "¡Cita Reservada!",
+        text: "Tu cita ha sido reservada exitosamente",
+        confirmButtonText: "Ver Mis Citas",
       });
 
       navigate(ROUTES.MIS_CITAS);
     } catch (err) {
-      setError('Error al crear la cita. Intenta nuevamente.');
+      setError("Error al crear la cita. Intenta nuevamente.");
     }
   };
 
@@ -74,7 +76,8 @@ export default function ConfirmationPage() {
     return (
       <Box>
         <Alert severity="error">
-          No se encontraron datos de la cita. Por favor, inicia el proceso desde el principio.
+          No se encontraron datos de la cita. Por favor, inicia el proceso desde
+          el principio.
         </Alert>
         <Button onClick={() => navigate(ROUTES.TERAPIAS)} sx={{ mt: 2 }}>
           Volver a Terapias
@@ -110,14 +113,14 @@ export default function ConfirmationPage() {
 
       <Grid container spacing={3}>
         {/* Datos del paciente */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Datos del Paciente
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Nombre Completo
@@ -134,7 +137,9 @@ export default function ConfirmationPage() {
                   <Typography variant="caption" color="text.secondary">
                     Teléfono
                   </Typography>
-                  <Typography variant="body1">{user?.telefono || 'No especificado'}</Typography>
+                  <Typography variant="body1">
+                    {user?.telefono || "No especificado"}
+                  </Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -142,14 +147,14 @@ export default function ConfirmationPage() {
         </Grid>
 
         {/* Datos de la cita */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Datos de la Cita
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Terapia
@@ -170,31 +175,40 @@ export default function ConfirmationPage() {
                     Fecha
                   </Typography>
                   <Typography variant="body1">
-                    {new Date(appointmentData.fecha).toLocaleDateString('es-ES', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {new Date(appointmentData.fecha).toLocaleDateString(
+                      "es-ES",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Hora
                   </Typography>
-                  <Typography variant="body1">{appointmentData.hora}</Typography>
+                  <Typography variant="body1">
+                    {appointmentData.hora}
+                  </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Duración
                   </Typography>
-                  <Typography variant="body1">{terapia.duracion} minutos</Typography>
+                  <Typography variant="body1">
+                    {terapia.duracion} minutos
+                  </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Precio
                   </Typography>
-                  <Typography variant="body1">${terapia.precio.toFixed(2)}</Typography>
+                  <Typography variant="body1">
+                    ${terapia.precio.toFixed(2)}
+                  </Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -202,7 +216,7 @@ export default function ConfirmationPage() {
         </Grid>
 
         {/* Información médica */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -213,16 +227,31 @@ export default function ConfirmationPage() {
                 <Typography variant="caption" color="text.secondary">
                   Síntomas
                 </Typography>
-                <Typography variant="body1">{appointmentData.sintomas}</Typography>
+                <Typography variant="body1">
+                  {appointmentData.sintomas}
+                </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  gutterBottom
+                >
                   Exámenes Médicos
                 </Typography>
                 {appointmentData.tieneExamenes ? (
-                  <Chip label="Sí tiene exámenes" color="success" size="small" />
+                  <Chip
+                    label="Sí tiene exámenes"
+                    color="success"
+                    size="small"
+                  />
                 ) : (
-                  <Chip label="No tiene exámenes" color="default" size="small" />
+                  <Chip
+                    label="No tiene exámenes"
+                    color="default"
+                    size="small"
+                  />
                 )}
               </Box>
             </CardContent>
@@ -237,12 +266,14 @@ export default function ConfirmationPage() {
             fullWidth
             variant="contained"
             size="large"
-            startIcon={isLoading ? <CircularProgress size={20} /> : <CheckIcon />}
+            startIcon={
+              isLoading ? <CircularProgress size={20} /> : <CheckIcon />
+            }
             onClick={handleConfirm}
             disabled={isLoading}
             sx={{ py: 1.5 }}
           >
-            {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
+            {isLoading ? "Confirmando..." : "Confirmar Cita"}
           </Button>
         </CardContent>
       </Card>

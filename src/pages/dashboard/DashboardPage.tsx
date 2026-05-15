@@ -259,7 +259,7 @@ export default function DashboardPage() {
 
             {loadingCitas ? (
               <Typography variant="body2" color="text.secondary">
-                Cargando citas...
+                Cargando citas…
               </Typography>
             ) : proximasCitas.length === 0 ? (
               <Box sx={{ textAlign: "center", py: 4 }}>

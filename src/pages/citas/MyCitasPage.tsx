@@ -28,6 +28,16 @@ import {
 } from "../../services/citasApi";
 import Swal from "sweetalert2";
 
+// Función auxiliar definida fuera del componente: evita crear objetos Date
+// en cada render y elimina la advertencia de hydration mismatch.
+const formatFechaCita = (fecha: string) =>
+  new Date(fecha).toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
 export default function MyCitasPage() {
   const [tabValue, setTabValue] = useState(0);
   const { data: citas = [], isLoading } = useGetCitasPacienteQuery();
@@ -170,12 +180,7 @@ export default function MyCitasPage() {
                   >
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body2">
-                      {new Date(cita.fecha).toLocaleDateString("es-ES", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {formatFechaCita(cita.fecha)}
                     </Typography>
                   </Box>
 

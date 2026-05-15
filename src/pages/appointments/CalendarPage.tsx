@@ -3,8 +3,8 @@
  * Paso 1: Selección de fecha y hora
  */
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -16,30 +16,34 @@ import {
   Alert,
   CircularProgress,
   Avatar,
-} from '@mui/material';
-import { ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon, Person as PersonIcon } from '@mui/icons-material';
-import { useGetHorariosDisponiblesQuery } from '../../services/citasApi';
-import { ROUTES } from '../../app/router';
-import { Terapia, Medico } from '../../types';
+} from "@mui/material";
+import {
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon,
+  Person as PersonIcon,
+} from "@mui/icons-material";
+import { useGetHorariosDisponiblesQuery } from "../../services/citasApi";
+import { ROUTES } from "../../app/router";
+import { Terapia, Medico } from "../../types";
 
 export default function CalendarPage() {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedHora, setSelectedHora] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedHora, setSelectedHora] = useState<string>("");
   const [terapia, setTerapia] = useState<Terapia | null>(null);
   const [medico, setMedico] = useState<Medico | null>(null);
 
   // Cargar terapia y médico seleccionados desde sessionStorage
   useEffect(() => {
-    const terapiaStr = sessionStorage.getItem('selectedTerapia');
-    const medicoStr = sessionStorage.getItem('selectedMedico');
-    
+    const terapiaStr = sessionStorage.getItem("selectedTerapia:v1");
+    const medicoStr = sessionStorage.getItem("selectedMedico:v1");
+
     if (!terapiaStr || !medicoStr) {
       // Si falta alguno, redirigir al inicio del flujo
       navigate(ROUTES.TERAPIAS);
       return;
     }
-    
+
     setTerapia(JSON.parse(terapiaStr));
     setMedico(JSON.parse(medicoStr));
   }, [navigate]);
@@ -51,21 +55,21 @@ export default function CalendarPage() {
     for (let i = 1; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
+      dates.push(date.toISOString().split("T")[0]);
     }
     return dates;
   };
 
   const dates = generateDates();
-  
+
   // Obtener horarios disponibles del médico seleccionado
   const { data: horariosRaw = [], isLoading } = useGetHorariosDisponiblesQuery(
     { medicoId: medico?.id || 0, fecha: selectedDate || dates[0] },
-    { skip: !terapia || !medico }
+    { skip: !terapia || !medico },
   );
-  
+
   // Filtrar solo horarios disponibles
-  const horarios = horariosRaw.filter(h => h.disponible);
+  const horarios = horariosRaw.filter((h) => h.disponible);
 
   const handleContinue = () => {
     if (!selectedDate || !selectedHora || !medico) {
@@ -73,12 +77,15 @@ export default function CalendarPage() {
     }
 
     // Guardar selección en sessionStorage
-    sessionStorage.setItem('appointmentData', JSON.stringify({
-      terapiaId: terapia?.id,
-      fecha: selectedDate,
-      hora: selectedHora,
-      medicoId: medico.id,
-    }));
+    sessionStorage.setItem(
+      "appointmentData",
+      JSON.stringify({
+        terapiaId: terapia?.id,
+        fecha: selectedDate,
+        hora: selectedHora,
+        medicoId: medico.id,
+      }),
+    );
 
     navigate(ROUTES.FORMULARIO_CITA);
   };
@@ -87,7 +94,8 @@ export default function CalendarPage() {
     return (
       <Box>
         <Alert severity="error">
-          No se ha completado la selección. Por favor, selecciona una terapia y un médico primero.
+          No se ha completado la selección. Por favor, selecciona una terapia y
+          un médico primero.
         </Alert>
         <Button onClick={() => navigate(ROUTES.TERAPIAS)} sx={{ mt: 2 }}>
           Volver a Terapias
@@ -110,12 +118,19 @@ export default function CalendarPage() {
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Selecciona Fecha y Hora
         </Typography>
-        
+
         {/* Información de terapia y médico seleccionados */}
-        <Card sx={{ mt: 2, bgcolor: 'primary.50', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+        <Card
+          sx={{
+            mt: 2,
+            bgcolor: "primary.50",
+            borderLeft: "4px solid",
+            borderColor: "primary.main",
+          }}
+        >
           <CardContent>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Terapia seleccionada
                 </Typography>
@@ -126,9 +141,11 @@ export default function CalendarPage() {
                   {terapia.duracion} min • ${terapia.precio.toFixed(2)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    sx={{ bgcolor: "primary.main", width: 48, height: 48 }}
+                  >
                     <PersonIcon />
                   </Avatar>
                   <Box>
@@ -151,7 +168,7 @@ export default function CalendarPage() {
 
       <Grid container spacing={3}>
         {/* Selección de fecha */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -161,26 +178,30 @@ export default function CalendarPage() {
                 {dates.map((date) => {
                   const dateObj = new Date(date);
                   const isSelected = selectedDate === date;
-                  
+
                   return (
-                    <Grid item xs={6} sm={4} key={date}>
+                    <Grid size={{ xs: 6, sm: 4 }} key={date}>
                       <Button
                         fullWidth
-                        variant={isSelected ? 'contained' : 'outlined'}
+                        variant={isSelected ? "contained" : "outlined"}
                         onClick={() => {
                           setSelectedDate(date);
-                          setSelectedHora('');
+                          setSelectedHora("");
                         }}
-                        sx={{ py: 2, flexDirection: 'column' }}
+                        sx={{ py: 2, flexDirection: "column" }}
                       >
                         <Typography variant="caption">
-                          {dateObj.toLocaleDateString('es-ES', { weekday: 'short' })}
+                          {dateObj.toLocaleDateString("es-ES", {
+                            weekday: "short",
+                          })}
                         </Typography>
                         <Typography variant="h6">
                           {dateObj.getDate()}
                         </Typography>
                         <Typography variant="caption">
-                          {dateObj.toLocaleDateString('es-ES', { month: 'short' })}
+                          {dateObj.toLocaleDateString("es-ES", {
+                            month: "short",
+                          })}
                         </Typography>
                       </Button>
                     </Grid>
@@ -192,19 +213,19 @@ export default function CalendarPage() {
         </Grid>
 
         {/* Selección de hora */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 2. Selecciona una Hora
               </Typography>
-              
+
               {!selectedDate ? (
                 <Alert severity="info" sx={{ mt: 2 }}>
                   Primero selecciona una fecha
                 </Alert>
               ) : isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                   <CircularProgress />
                 </Box>
               ) : horarios.length === 0 ? (
@@ -215,12 +236,15 @@ export default function CalendarPage() {
                 <Grid container spacing={1} sx={{ mt: 1 }}>
                   {horarios.map((horario) => {
                     const isSelected = selectedHora === horario.hora;
-                    
+
                     return (
-                      <Grid item xs={6} sm={4} key={`${horario.hora}-${horario.medicoId}`}>
+                      <Grid
+                        size={{ xs: 6, sm: 4 }}
+                        key={`${horario.hora}-${horario.medicoId}`}
+                      >
                         <Button
                           fullWidth
-                          variant={isSelected ? 'contained' : 'outlined'}
+                          variant={isSelected ? "contained" : "outlined"}
                           onClick={() => {
                             setSelectedHora(horario.hora);
                           }}
@@ -246,8 +270,11 @@ export default function CalendarPage() {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Resumen de tu Selección
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
-              <Chip label={`Fecha: ${new Date(selectedDate).toLocaleDateString('es-ES')}`} color="primary" />
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 2 }}>
+              <Chip
+                label={`Fecha: ${new Date(selectedDate).toLocaleDateString("es-ES")}`}
+                color="primary"
+              />
               <Chip label={`Hora: ${selectedHora}`} color="primary" />
             </Box>
             <Button

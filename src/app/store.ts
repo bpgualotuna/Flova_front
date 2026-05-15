@@ -3,11 +3,11 @@
  * Basado en el documento de especificaciones técnicas
  */
 
-import { configureStore } from '@reduxjs/toolkit';
-import { citasApi } from '../services/citasApi';
-import { terapiasApi } from '../services/terapiasApi';
-import { medicosApi } from '../services/medicosApi';
-import { usersApi } from '../services/usersApi';
+import { configureStore } from "@reduxjs/toolkit";
+import { citasApi } from "../services/citasApi";
+import { terapiasApi } from "../services/terapiasApi";
+import { medicosApi } from "../services/medicosApi";
+import { usersApi } from "../services/usersApi";
 
 export const store = configureStore({
   reducer: {
@@ -24,9 +24,5 @@ export const store = configureStore({
       .concat(medicosApi.middleware)
       .concat(usersApi.middleware),
 });
-
-// Tipos para TypeScript
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
 
 export default store;
